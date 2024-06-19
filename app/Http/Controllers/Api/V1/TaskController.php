@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\BaseController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
@@ -8,11 +10,13 @@ use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use Illuminate\Http\Request;
 
-class TaskController extends Controller
+class TaskController extends BaseController
 {
     public function index()
     {
-        return TaskResource::collection(Task::all());
+        return $this->sendResponse('Task successfully fetch', TaskResource::collection(Task::all()), [
+            'option' => Task::all()
+        ]);
     }
 
     public function store(StoreTaskRequest $request)
@@ -24,7 +28,9 @@ class TaskController extends Controller
     
     public function show(Task $task)
     {
-        return TaskResource::make($task);
+
+       return $this->sendResponse('Task successfully fetch', new TaskResource($task), [
+       ]);
     }
 
     public function update(UpdateTaskRequest $request, Task $task)

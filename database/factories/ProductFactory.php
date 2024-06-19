@@ -20,6 +20,9 @@ class ProductFactory extends Factory
             'image_path' => '/storage/images/' . $this->faker->image('public/storage/images', 400, 300, null, false),
             'brand' => $this->faker->company,
             'product_name' => $this->faker->word,
+            'category' => $this->faker->randomElement(['PC', 'Laptop']),
+            'quantity' => $this->faker->numberBetween(1, 50),
+            'description' => $this->faker->paragraph,
             'price' => $this->faker->randomFloat(2, 100, 1000),
         ];
     }

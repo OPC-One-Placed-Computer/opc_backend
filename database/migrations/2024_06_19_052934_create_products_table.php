@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('image_path');
             $table->string('brand');
             $table->string('product_name');
+            $table->string('category');
+            $table->integer('quantity');
+            $table->text('description');
             $table->decimal('price', 8, 2);
             $table->timestamps();
         });
