@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tasks', function (Blueprint $table) {
+        Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->boolean('is_completed')->default(false);
+            $table->string('image_name');
+            $table->string('image_path');
+            $table->string('brand');
+            $table->string('product_name');
+            $table->decimal('price', 8, 2);
             $table->timestamps();
         });
     }
@@ -24,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tasks');
+        Schema::dropIfExists('products');
     }
-};
+}; 
