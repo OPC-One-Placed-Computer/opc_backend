@@ -14,7 +14,9 @@ class BaseController extends Controller
             'data' => $result,
         ];
 
-        $response += $opt;
+        if (!empty($opt)) {
+            $response = array_merge($response, $opt);
+        }
 
         return response()->json($response, 200);
     }
