@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\BaseController;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 
-class ProductController extends Controller
+class ProductController extends BaseController
 {
     public function index()
     {
-        return ProductResource::collection(Product::all());
+        return $this->sendResponse('Products successfully fetch', ProductResource::collection(Product::all()));
     }
 
-    public function show($id)
+    public function show(Product $product)
     {
-        $product = Product::findOrFail($id);
-        return new ProductResource($product);
-    }
+        return $this->sendResponse('Product successfully fetch', new ProductResource($product), [
+        ]);
+     }
 }
