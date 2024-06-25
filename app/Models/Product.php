@@ -13,13 +13,13 @@ class Product extends Model
         'image_name', 'image_path', 'brand', 'product_name','category', 'quantity', 'description', 'price',
     ];
 
-//     /**
-//      * Product can have multiple order items associated
-//      * 
-//      * @return HasMany
-//      */
-//     public function orderItems()
-//     {
-//         return $this->hasMany(OrderItem::class);
-//     }
+    /**
+     * Product can have multiple order items associated
+     * 
+     * @return HasMany
+    */
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
  }
