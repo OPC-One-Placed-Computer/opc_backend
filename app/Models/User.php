@@ -48,13 +48,13 @@ class User extends Authenticatable
         ];
     }
 
-    // /**
-    //  * Get orders associated with this user
-    //  * 
-    //  * @return HasMany
-    //  */
-    // public function orders()
-    // {
-    //     return $this->hasMany(Order::class);
-    // }
+    /**
+    * Get orders associated with this user
+     * 
+     * @return HasMany
+    */
+    public function orders()
+    {
+       return $this->hasMany(Order::class);
+    }
 }

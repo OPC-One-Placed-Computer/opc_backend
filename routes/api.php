@@ -12,7 +12,11 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::apiResource('/products', ProductController::class);
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::get('/products/{id}' , [ProductController::class, 'show']);
+    Route::put('/products', [ProductController::class, 'update']);
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Protected routes requiring authentication
     Route::middleware('auth:sanctum')->group(function () {
@@ -21,10 +25,11 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::get('/cart', [CartItemController::class, 'index']);
-        Route::post('/cart_item', [CartItemController::class, 'store']);
+        Route::post('/cart', [CartItemController::class, 'store']);
+        Route::put('/cart/{id}', [CartItemController::class, 'update']);
         Route::delete('/cart/{id}', [CartItemController::class, 'destroy']);
 
-        Route::post('/order', [OrderController::class, 'placeOrder']);
+        Route::post('/orders', [OrderController::class, 'placeOrder']);
         Route::get('/orders', [OrderController::class, 'index']);
         
         Route::get('/current-authentication', [AuthController::class, 'current_authentication']);

@@ -8,6 +8,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends BaseController
 {
@@ -22,8 +23,15 @@ class OrderController extends BaseController
         // Fetch cart items for the current user
         $cartItems = CartItem::where('user_id', auth()->id())->get();
 
+        if ($cartItems->isEmpty()) {
+            return $this->sendError('Cart is empty', [], 400);
+        }
+
         // Calculate total price
-        $total = $cartItems->sum('subtotal');
+        $total = 0;
+        foreach ($cartItems as $cartItem) {
+            $total += $cartItem->product->price * $cartItem->quantity;
+        }
 
         // Create order
         $order = Order::create([
@@ -38,16 +46,16 @@ class OrderController extends BaseController
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->product;
 
-            // Calculate item price (product price)
-            $itemPrice = $product->price;
-
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $cartItem->product_id,
-                'quantity' => $cartItem->quantity,
-                'price' => $itemPrice, // Store the product price instead of subtotal
-                'subtotal' => $cartItem->subtotal,
-            ]);
+            // Ensure the product exists and fetch the price
+            if ($product) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $cartItem->product_id,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $product->price, // Store the product price
+                    'subtotal' => $product->price * $cartItem->quantity,
+                ]);
+            }
         }
 
         // Clear cart items

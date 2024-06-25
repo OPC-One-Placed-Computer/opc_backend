@@ -7,7 +7,6 @@ use App\Http\Resources\CartItemResource;
 use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class CartItemController extends BaseController
 {
@@ -26,19 +25,56 @@ class CartItemController extends BaseController
             'quantity' => 'required|integer|min:1',
         ]);
 
-        // Fetch product price
-        $product = Product::find($validatedData['product_id']);
-        $subtotal = $product->price * $validatedData['quantity'];
+        $userId = auth()->id();
+        $productId = $validatedData['product_id'];
+        $quantity = $validatedData['quantity'];
 
-        // Create cart item
+        // Check if the product already exists in the cart for the current user
+        $existingCartItem = CartItem::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->first();
+
+        if ($existingCartItem) {
+            // Product already exists in cart, update the quantity
+            $existingCartItem->quantity += $quantity;
+            $existingCartItem->subtotal += $quantity * $existingCartItem->product->price;
+            $existingCartItem->save();
+            return $this->sendResponse('Product quantity updated successfully', new CartItemResource($existingCartItem));
+        }
+
+        // Product does not exist in cart, create a new cart item
+        $product = Product::find($productId);
+        $subtotal = $product->price * $quantity;
+
         $cartItem = CartItem::create([
-            'user_id' => auth()->id(), // Get the authenticated user's ID
-            'product_id' => $validatedData['product_id'],
-            'quantity' => $validatedData['quantity'],
+            'user_id' => $userId,
+            'product_id' => $productId,
+            'quantity' => $quantity,
             'subtotal' => $subtotal,
         ]);
 
         return $this->sendResponse('Product added to cart successfully', new CartItemResource($cartItem));
+    }
+
+    public function update(Request $request, $id)
+    {
+        // Validate request
+        $validatedData = $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $userId = auth()->id();
+        $quantity = $validatedData['quantity'];
+
+        // Find the cart item belonging to the current user
+        $cartItem = CartItem::where('user_id', $userId)->findOrFail($id);
+
+        // Update the cart item quantity and subtotal
+        $cartItem->quantity = $quantity;
+        $cartItem->subtotal = $cartItem->product->price * $quantity; // Recalculate subtotal based on new quantity
+        $cartItem->save();
+
+        return $this->sendResponse('Cart item updated successfully', new CartItemResource($cartItem));
     }
 
     public function destroy($id)
