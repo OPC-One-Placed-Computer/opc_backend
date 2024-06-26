@@ -52,7 +52,7 @@ class OrderController extends BaseController
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
                     'quantity' => $cartItem->quantity,
-                    'price' => $product->price, // Store the product price
+                    // 'price' => $product->price, // Store the product price
                     'subtotal' => $product->price * $cartItem->quantity,
                 ]);
             }
