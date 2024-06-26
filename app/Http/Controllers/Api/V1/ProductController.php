@@ -47,11 +47,11 @@ class ProductController extends BaseController
 
      }
 
-     public function show(Product $product)
+     public function show($id)
      {
-         return $this->sendResponse('Product successfully fetch', new ProductResource($product), [
+         return $this->sendResponse('Product successfully fetch', new ProductResource(Product::find($id)), [
          ]);
-      }
+    }
 
      public function update(Request $request, Product $product)
      {
