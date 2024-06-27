@@ -49,9 +49,14 @@ class ProductController extends BaseController
 
      public function show($id)
      {
-         return $this->sendResponse('Product successfully fetch', new ProductResource(Product::find($id)), [
-         ]);
-    }
+         $product = Product::find($id);
+     
+         if (!$product) {
+             return $this->sendError('Product not found');
+         }
+     
+         return $this->sendResponse('Product successfully fetched', new ProductResource($product));
+     }
 
      public function update(Request $request, Product $product)
      {
@@ -61,7 +66,7 @@ class ProductController extends BaseController
             'brand' => 'required|string',
             'product_name' => 'required|string',
             'category' => 'required|string',
-            'quantity' => 'required|string',
+            'quantity' => 'required|integer',
             'description' => 'required|string',
             'price' => 'required|numeric',
         ]);

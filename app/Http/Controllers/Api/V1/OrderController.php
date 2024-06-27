@@ -8,7 +8,6 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class OrderController extends BaseController
 {
@@ -21,7 +20,7 @@ class OrderController extends BaseController
         ]);
 
         // Fetch cart items for the current user
-        $cartItems = CartItem::where('user_id', auth()->id())->get();
+        $cartItems = CartItem::where('user_id', auth()->user()->id)->get();
 
         if ($cartItems->isEmpty()) {
             return $this->sendError('Cart is empty', [], 400);
@@ -35,7 +34,7 @@ class OrderController extends BaseController
 
         // Create order
         $order = Order::create([
-            'user_id' => auth()->id(),
+            'user_id' => auth()->user()->id,
             'full_name' => $validatedData['full_name'],
             'shipping_address' => $validatedData['shipping_address'],
             'total' => $total,
@@ -45,21 +44,20 @@ class OrderController extends BaseController
         // Create order items
         foreach ($cartItems as $cartItem) {
             $product = $cartItem->product;
-
+            
             // Ensure the product exists and fetch the price
             if ($product) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
                     'quantity' => $cartItem->quantity,
-                    // 'price' => $product->price, // Store the product price
                     'subtotal' => $product->price * $cartItem->quantity,
                 ]);
             }
         }
 
         // Clear cart items
-        CartItem::where('user_id', auth()->id())->delete();
+        CartItem::where('user_id', auth()->user()->id)->delete();
 
         // Eager load order items relationship with product details
         $order->load('orderItems.product');
@@ -69,8 +67,11 @@ class OrderController extends BaseController
 
     public function index(Request $request)
     {
-        // Fetch orders for the current authenticated user
-        $orders = Order::where('user_id', auth()->id())->get();
+        $orders = Order::where('user_id', auth()->user()->id)->with('orderItems')->get();
+
+        if ($orders->isEmpty()) {
+            return $this->sendError('Order is empty', [], 404);
+        }
 
         return $this->sendResponse('Orders fetched successfully', OrderResource::collection($orders));
     }

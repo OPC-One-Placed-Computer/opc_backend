@@ -13,7 +13,12 @@ class CartItemController extends BaseController
     public function index()
     {
         // Fetch cart items for the current user
-        $cartItems = CartItem::where('user_id', auth()->id())->with('product')->get();
+        $cartItems = CartItem::where('user_id', auth()->user()->id)->with('product')->get();
+
+        if ($cartItems->isEmpty()) {
+            return $this->sendError('Cart is empty');
+        }
+
         return $this->sendResponse('Cart items fetched successfully', CartItemResource::collection($cartItems));
     }
 
@@ -25,7 +30,7 @@ class CartItemController extends BaseController
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $userId = auth()->id();
+        $userId = auth()->user()->id;
         $productId = $validatedData['product_id'];
         $quantity = $validatedData['quantity'];
 
@@ -63,7 +68,7 @@ class CartItemController extends BaseController
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $userId = auth()->id();
+        $userId = auth()->user()->id;
         $quantity = $validatedData['quantity'];
 
         // Find the cart item belonging to the current user
@@ -80,7 +85,7 @@ class CartItemController extends BaseController
     public function destroy($id)
     {
         // Find cart item belonging to the current user
-        $cartItem = CartItem::where('user_id', auth()->id())->findOrFail($id);
+        $cartItem = CartItem::where('user_id', auth()->user()->id)->findOrFail($id);
         
         // Delete cart item
         $cartItem->delete();
