@@ -3,19 +3,25 @@
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartItemController;
+use App\Http\Controllers\Api\v1\DownloadStoredFileController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::post('/register', [UserController::class, 'register']);
+    Route::get('users', [UserController::class, 'index']);
+    Route::delete('/user/{id}', [UserController::class, 'destroy']);
+
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/featured', [ProductController::class, 'featured']);
     Route::post('/products', [ProductController::class, 'store']);
-    Route::get('/products/{id}' , [ProductController::class, 'show']);
-    Route::put('/products', [ProductController::class, 'update']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::post('/products/{id}', [ProductController::class, 'update']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     // Protected routes requiring authentication
@@ -24,6 +30,10 @@ Route::prefix('v1')->group(function () {
             return $request->user();
         });
 
+        //Route::get('user-profile-image/{imageName}',DownloadStoredFileController::class)->name('user.profile.image');
+        Route::post('update-user/{id}', [UserController::class, 'updateProfile']);
+        Route::post('change-password/{id}', [UserController::class, 'changePassword']);
+
         Route::get('/cart', [CartItemController::class, 'index']);
         Route::post('/cart', [CartItemController::class, 'store']);
         Route::put('/cart/{id}', [CartItemController::class, 'update']);
@@ -31,10 +41,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/orders', [OrderController::class, 'placeOrder']);
         Route::get('/orders', [OrderController::class, 'index']);
-        
+
         Route::get('/current-authentication', [AuthController::class, 'current_authentication']);
-        
     });
 });
-
-
