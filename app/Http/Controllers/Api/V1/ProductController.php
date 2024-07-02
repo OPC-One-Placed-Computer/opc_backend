@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\BaseController;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends BaseController
 {
@@ -15,8 +17,9 @@ class ProductController extends BaseController
         return $this->sendResponse('Products successfully fetch', ProductResource::collection(Product::all()));
     }
 
-     public function store(Request $request)
-     {
+    public function store(Request $request)
+    {
+
         $validatedData = $request->validate([
             'product_name' => 'nullable|string',
             'price' => 'nullable|numeric',
@@ -27,60 +30,130 @@ class ProductController extends BaseController
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Handle image upload
-        $imagePath = $request->file('image')->store('public/images');
-        $imageName = basename($imagePath);
+        DB::beginTransaction();
+        try {
 
-        // Create new product
-        $product = Product::create([
-            'product_name' => $validatedData['product_name'],
-            'price' => $validatedData['price'],
-            'description' => $validatedData['description'],
-            'quantity' => $validatedData['quantity'],
-            'category' => $validatedData['category'],
-            'brand' => $validatedData['brand'],
-            'image_name' => $imageName,
-            'image_path' => Storage::url($imagePath),
-        ]);
-        
-        return $this->sendResponse('Product successfully added', new ProductResource($product));
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                $fileName = $this->normalizeFileName($image->getClientOriginalName());
+                $imagePath = '/storage/images/' . $fileName;
 
-     }
+                $image->storeAs('images', $fileName);
 
-     public function show($id)
-     {
-         $product = Product::find($id);
-     
-         if (!$product) {
-             return $this->sendError('Product not found');
-         }
-     
-         return $this->sendResponse('Product successfully fetched', new ProductResource($product));
-     }
+                $imageName = basename($imagePath);
+            } else {
+                $imageName = null;
+                $imagePath = null;
+            }
 
-     public function update(Request $request, Product $product)
-     {
+            // Create new product
+            $product = Product::create([
+                'product_name' => $validatedData['product_name'],
+                'price' => $validatedData['price'],
+                'description' => $validatedData['description'],
+                'quantity' => $validatedData['quantity'],
+                'category' => $validatedData['category'],
+                'brand' => $validatedData['brand'],
+                'image_name' => $imageName,
+                'image_path' => $imagePath,
+            ]);
+
+            DB::commit();
+            return $this->sendResponse('Product successfully added', new ProductResource($product));
+        } catch (Exception $exeption) {
+            DB::rollBack();
+            $this->sendError($exeption);
+        }
+    }
+
+    public function show($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return $this->sendError('Product not found');
+        }
+
+        return $this->sendResponse('Product successfully fetched', new ProductResource($product));
+    }
+
+    public function featured()
+    {
+        $featuredProducts = Product::where('featured', true)->get();
+
+        if ($featuredProducts->isEmpty()) {
+            return $this->sendError('No featured products found');
+        }
+
+        return $this->sendResponse('Feature products fetched', ProductResource::collection($featuredProducts));
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $product = Product::findOrFail($id);
+
         $validatedData = $request->validate([
-            'image_name' => 'nullable|string',
-            'image_path' => 'nullable|string',
-            'brand' => 'required|string',
-            'product_name' => 'required|string',
-            'category' => 'required|string',
-            'quantity' => 'required|integer',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
+            'product_name' => 'nullable|string',
+            'price' => 'nullable|numeric',
+            'description' => 'nullable|string',
+            'quantity' => 'nullable|integer',
+            'category' => 'nullable|string',
+            'brand' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $product->update($validatedData);
+        DB::beginTransaction();
+        try {
 
-        return $this->sendResponse('Product updated successfully', new ProductResource($product));
+            // Handle image update
+            if ($request->hasFile('image')) {
+                if ($product->image_name && $product->image_path) {
+                    Storage::delete('storage/images/' . $product->image_path);
+                }
 
-     }
+                $image = $request->file('image');
+                $fileName = $this->normalizeFileName($image->getClientOriginalName());
+                $imagePath = '/storage/images/' . $fileName;
 
-     public function destroy(Product $product)
-     {
-        $product->delete();
+                $image->storeAs('images', $fileName);
 
-        return $this->sendResponse('Product deleted successfully');
-     }
+                $imageName = basename($imagePath);
+            } else {
+                $imageName = $product->image_name;
+                $imagePath = $product->image_path;
+            }
+
+            // Update product
+            $product->update([
+                'product_name' => $validatedData['product_name'],
+                'price' => $validatedData['price'],
+                'description' => $validatedData['description'],
+                'quantity' => $validatedData['quantity'],
+                'category' => $validatedData['category'],
+                'brand' => $validatedData['brand'],
+                'image_name' => $imageName,
+                'image_path' => $imagePath,
+            ]);
+
+            DB::commit();
+            return $this->sendResponse('Product updated successfully', new ProductResource($product));
+        } catch (Exception $exeption) {
+            DB::rollBack();
+            $this->sendError($exeption);
+        }
+    }
+
+
+    public function destroy(int $id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+
+            return $this->sendResponse('Product deleted successfully');
+        } catch (Exception $exeption) {
+            $this->sendError($exeption);
+        }
+    }
 }

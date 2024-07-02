@@ -10,16 +10,24 @@ class Product extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'image_name', 'image_path', 'brand', 'product_name','category', 'quantity', 'description', 'price',
+        'image_name',
+        'image_path',
+        'brand',
+        'product_name',
+        'featured',
+        'category',
+        'quantity',
+        'description',
+        'price',
     ];
 
     /**
      * Product can have multiple order items associated
      * 
      * @return HasMany
-    */
+     */
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
- }
+}

@@ -23,6 +23,9 @@ class User extends Authenticatable
         'last_name',
         'email',
         'password',
+        'image_name',
+        'image_path',
+        'address',
     ];
 
     /**
@@ -49,12 +52,12 @@ class User extends Authenticatable
     }
 
     /**
-    * Get orders associated with this user
+     * Get orders associated with this user
      * 
      * @return HasMany
-    */
+     */
     public function orders()
     {
-       return $this->hasMany(Order::class);
+        return $this->hasMany(Order::class);
     }
 }
