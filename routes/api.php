@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
     Route::delete('/user/{id}', [UserController::class, 'destroy']);
 
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/search', [ProductController::class, 'search']);
     Route::get('/products/featured', [ProductController::class, 'featured']);
     Route::post('/products', [ProductController::class, 'store']);
     Route::get('/products/{id}', [ProductController::class, 'show']);

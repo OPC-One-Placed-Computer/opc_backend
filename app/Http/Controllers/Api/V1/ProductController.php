@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends BaseController
 {
@@ -88,6 +89,30 @@ class ProductController extends BaseController
 
         return $this->sendResponse('Feature products fetched', ProductResource::collection($featuredProducts));
     }
+
+    public function search(Request $request)
+    {
+        $keyword = strtolower($request->input('keyword'));
+
+        if (empty($keyword)) {
+            return $this->sendError('Keyword is required', [], 400);
+        }
+
+        try {
+            $products = Product::search($keyword)->get();
+
+
+            if ($products->isEmpty()) {
+                return $this->sendError('No products found', [], 400);
+            }
+
+            return $this->sendResponse('Products fetched successfully', ProductResource::collection($products));
+        } catch (Exception $exception) {
+            Log::error('Search error:', ['exception' => $exception]);
+            return $this->sendError($exception->getMessage());
+        }
+    }
+
 
     public function update(Request $request, int $id)
     {
