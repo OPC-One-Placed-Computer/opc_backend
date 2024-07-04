@@ -7,31 +7,10 @@ use App\Http\Resources\AuthResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+
 
 class AuthController extends BaseController
 {
-    public function register(Request $request)
-    {
-        $request->validate([
-            'first_name' => ['required', 'string', 'max:25'],
-            'last_name' => ['required', 'string', 'max:25'],
-            'email' => ['required', 'email', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-
-
-        return $this->sendResponse('User registered successfully', new AuthResource($user));
-    }
-
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -54,13 +33,13 @@ class AuthController extends BaseController
         ]);
     }
 
-    public function current_authentication ()
+    public function current_authentication()
     {
         $user = auth()->user();
 
-        if ($user){
+        if ($user) {
             return $this->sendResponse('User authenticated', new AuthResource($user));
-            } else {
+        } else {
             return response()->json(['message' => 'Unauthenticated User'], 401);
         }
     }
@@ -75,5 +54,4 @@ class AuthController extends BaseController
 
         return $this->sendResponse('Logged out succesfully');
     }
-
 }

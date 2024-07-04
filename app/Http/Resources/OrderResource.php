@@ -26,5 +26,5 @@ class OrderResource extends JsonResource
             'updated_at' => $this->updated_at,
             'order_items' => OrderItemResource::collection($this->orderItems),
         ];
-    }       
+    }
 }
