@@ -22,30 +22,30 @@ class ProductController extends BaseController
     {
 
         $validatedData = $request->validate([
-            'product_name' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'description' => 'nullable|string',
-            'quantity' => 'nullable|integer',
-            'category' => 'nullable|string',
-            'brand' => 'nullable|string',
+            'product_name' => 'required|string',
+            'price' => 'required|numeric',
+            'description' => 'required|string',
+            'quantity' => 'required|integer',
+            'category' => 'required|string',
+            'brand' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         DB::beginTransaction();
         try {
 
+            $imageName = null;
+            $imagePath = null;
+
             // Handle image upload
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $fileName = $this->normalizeFileName($image->getClientOriginalName());
-                $imagePath = '/storage/images/' . $fileName;
+                $imagePath = '/storage/product_images/' . $fileName;
 
-                $image->storeAs('images', $fileName);
+                $image->storeAs('product_images', $fileName, 'public');
 
                 $imageName = basename($imagePath);
-            } else {
-                $imageName = null;
-                $imagePath = null;
             }
 
             // Create new product
@@ -131,22 +131,22 @@ class ProductController extends BaseController
         DB::beginTransaction();
         try {
 
+            $imageName = $product->image_name;
+            $imagePath = $product->image_path;
+
             // Handle image update
             if ($request->hasFile('image')) {
-                if ($product->image_name && $product->image_path) {
-                    Storage::delete('storage/images/' . $product->image_path);
+                if ($product->image_path) {
+                    Storage::disk('local')->delete($product->image_path);
                 }
 
                 $image = $request->file('image');
                 $fileName = $this->normalizeFileName($image->getClientOriginalName());
-                $imagePath = '/storage/images/' . $fileName;
+                $imagePath = '/storage/product_images/' . $fileName;
 
-                $image->storeAs('images', $fileName);
+                $image->storeAs('product_images', $fileName, 'public');
 
                 $imageName = basename($imagePath);
-            } else {
-                $imageName = $product->image_name;
-                $imagePath = $product->image_path;
             }
 
             // Update product

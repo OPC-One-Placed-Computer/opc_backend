@@ -13,69 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends BaseController
 {
-
-    // public function placeOrder(Request $request)
-    // {
-    //     // Validate request
-    //     $validatedData = $request->validate([
-    //         'full_name' => 'required|string',
-    //         'shipping_address' => 'required|string',
-    //     ]);
-
-    //     // Fetch cart items for the current user
-    //     $cartItems = CartItem::where('user_id', auth()->user()->id)->get();
-
-    //     if ($cartItems->isEmpty()) {
-    //         return $this->sendError('Cart is empty', [], 400);
-    //     }
-
-    //     DB::beginTransaction();
-    //     try {
-
-    //         // Calculate total price
-    //         $total = 0;
-    //         foreach ($cartItems as $cartItem) {
-    //             $total += $cartItem->product->price * $cartItem->quantity;
-    //         }
-
-    //         // Create order
-    //         $order = Order::create([
-    //             'user_id' => auth()->user()->id,
-    //             'full_name' => $validatedData['full_name'],
-    //             'shipping_address' => $validatedData['shipping_address'],
-    //             'total' => $total,
-    //             'status' => 'pending', // Default status
-    //         ]);
-
-    //         // Create order items
-    //         foreach ($cartItems as $cartItem) {
-    //             $product = $cartItem->product;
-
-    //             // Ensure the product exists and fetch the price
-    //             if ($product) {
-    //                 OrderItem::create([
-    //                     'order_id' => $order->id,
-    //                     'product_id' => $cartItem->product_id,
-    //                     'quantity' => $cartItem->quantity,
-    //                     'subtotal' => $product->price * $cartItem->quantity,
-    //                 ]);
-    //             }
-    //         }
-
-    //         // Clear cart items
-    //         CartItem::where('user_id', auth()->user()->id)->delete();
-
-    //         // Eager load order items relationship with product details
-    //         $order->load('orderItems.product');
-
-    //         DB::commit();
-    //         return $this->sendResponse('Order placed successfully', new OrderResource($order));
-    //     } catch (Exception $exeption) {
-    //         DB::rollBack();
-    //         $this->sendError($exeption);
-    //     }
-    // }
-
     public function placeOrder(Request $request)
     {
 
@@ -131,6 +68,38 @@ class OrderController extends BaseController
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError($exception->getMessage());
+        }
+    }
+
+    public function cancelOrder(Request $request)
+    {
+        // Validate request data
+        $request->validate([
+            'order_id' => 'required|exists:orders,id,user_id,' . auth()->user()->id,
+        ]);
+
+        $orderId = $request->input('order_id');
+
+        $order = Order::where('id', $orderId)->where('user_id', auth()->user()->id)->first();
+
+        if (!$order) {
+            return $this->sendError('Order not found or does not belong to the user', [], 404);
+        }
+
+        if ($order->status === 'cancelled') {
+            return $this->sendError('Order is already cancelled', [], 400);
+        }
+
+        $order->status = 'cancelled';
+        
+        DB::beginTransaction();
+        try {
+            $order->save();
+            DB::commit();
+            return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
         }
     }
 
