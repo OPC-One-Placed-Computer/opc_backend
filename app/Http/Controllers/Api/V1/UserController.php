@@ -61,14 +61,16 @@ class UserController extends BaseController
 
         DB::beginTransaction();
         try {
-
             $user->first_name = $request->first_name;
             $user->last_name = $request->last_name;
             $user->address = $request->address;
 
             if ($request->hasFile('image')) {
                 $previousImage = $user->image_path;
-                Storage::disk('local')->delete($previousImage);
+
+                if ($previousImage) {
+                    Storage::disk('local')->delete($previousImage);
+                }
 
                 $image = $request->file('image');
                 $imageName = $this->normalizeFileName($image->getClientOriginalName());
@@ -85,7 +87,7 @@ class UserController extends BaseController
             $user->save();
             DB::commit();
             return $this->sendResponse('Profile updated successfully', new UserResource($user));
-        } catch (Exception $exeption) {
+        } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to update profile', [], 500);
         }
