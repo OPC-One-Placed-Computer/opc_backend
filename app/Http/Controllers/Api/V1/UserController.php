@@ -48,48 +48,50 @@ class UserController extends BaseController
         }
     }
 
-    // public function updateProfile(Request $request, int $userId)
-    // {
-    //     $user = User::findOrFail($userId);
+    public function updateProfile(Request $request, int $userId)
+    {
+        $user = User::findOrFail($userId);
 
-    //     $request->validate([
-    //         'first_name' => ['required', 'string', 'max:25'],
-    //         'last_name' => ['required', 'string', 'max:25'],
-    //         'address' => ['nullable', 'string'],
-    //         'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-    //     ]);
+        $request->validate([
+            'first_name' => ['required', 'string', 'max:25'],
+            'last_name' => ['required', 'string', 'max:25'],
+            'address' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ]);
 
-    //     DB::beginTransaction();
-    //     try {
+        DB::beginTransaction();
+        try {
+            $user->first_name = $request->first_name;
+            $user->last_name = $request->last_name;
+            $user->address = $request->address;
 
-    //         $user->first_name = $request->first_name;
-    //         $user->last_name = $request->last_name;
-    //         $user->address = $request->address;
+            if ($request->hasFile('image')) {
+                $previousImage = $user->image_path;
 
-    //         if ($request->hasFile('image')) {
-    //             $previousImage = $user->image_path;
-    //             Storage::disk('local')->delete($previousImage);
+                if ($previousImage) {
+                    Storage::disk('local')->delete($previousImage);
+                }
 
-    //             $image = $request->file('image');
-    //             $imageName = $this->normalizeFileName($image->getClientOriginalName());
-    //             $imagePath = 'user_images/' . $imageName;
+                $image = $request->file('image');
+                $imageName = $this->normalizeFileName($image->getClientOriginalName());
+                $imagePath = 'user_images/' . $imageName;
 
-    //             $image->storeAs('user_images', $imageName, 'local');
+                $image->storeAs('user_images', $imageName, 'local');
 
-    //             $imageName = basename($imagePath);
+                $imageName = basename($imagePath);
 
-    //             $user->image_name = $imageName;
-    //             $user->image_path = $imagePath;
-    //         }
+                $user->image_name = $imageName;
+                $user->image_path = $imagePath;
+            }
 
-    //         $user->save();
-    //         DB::commit();
-    //         return $this->sendResponse('Profile updated successfully', new UserResource($user));
-    //     } catch (Exception $exeption) {
-    //         DB::rollBack();
-    //         return $this->sendError('Failed to update profile', [], 500);
-    //     }
-    // }
+            $user->save();
+            DB::commit();
+            return $this->sendResponse('Profile updated successfully', new UserResource($user));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->sendError('Failed to update profile', [], 500);
+        }
+    }
 
     public function changePassword(Request $request, int $userId)
     {
