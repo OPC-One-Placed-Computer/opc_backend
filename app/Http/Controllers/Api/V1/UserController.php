@@ -55,15 +55,28 @@ class UserController extends BaseController
         $request->validate([
             'first_name' => ['required', 'string', 'max:25'],
             'last_name' => ['required', 'string', 'max:25'],
+            'email' => ['required', 'email', 'unique:users,email,' . $userId],
             'address' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'old_password' => ['nullable', 'required_with:new_password', 'string', 'min:8'],
+            'new_password' => ['nullable', 'confirmed', 'string', 'min:8'],
         ]);
 
         DB::beginTransaction();
         try {
             $user->first_name = $request->first_name;
             $user->last_name = $request->last_name;
+            $user->email = $request->email;
             $user->address = $request->address;
+
+            $passwordChanged = false;
+            if ($request->has('old_password') && $request->has('new_password')) {
+                if (!Hash::check($request->old_password, $user->password)) {
+                    return $this->sendError('Invalid old password', [], 401);
+                }
+                $user->password = Hash::make($request->new_password);
+                $passwordChanged = true;
+            }
 
             if ($request->hasFile('image')) {
                 $previousImage = $user->image_path;
@@ -86,33 +99,21 @@ class UserController extends BaseController
 
             $user->save();
             DB::commit();
-            return $this->sendResponse('Profile updated successfully', new UserResource($user));
+
+            $responseData = [
+                'message' => 'Profile updated successfully',
+                'user' => new UserResource($user)
+            ];
+
+            if ($passwordChanged) {
+                $responseData['new_password'] = $request->new_password;
+            }
+            return response()->json($responseData);
+
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to update profile', [], 500);
         }
-    }
-
-    public function changePassword(Request $request, int $userId)
-    {
-        $request->validate([
-            'old_password' => ['required'],
-            'new_password' => ['required', 'confirmed'],
-            'new_password_confirmation' => ['required']
-        ]);
-
-        $user = User::findOrFail($userId);
-
-        if (!Hash::check($request['old_password'], $user->password)) {
-            return response()->json([
-                'message' => 'Invalid old password'
-            ], 401);
-        }
-
-        $user->password = Hash::make($request->new_password);
-        $user->save();
-
-        return $this->sendResponse('Password change successfully');
     }
 
     public function destroy(int $userId)
