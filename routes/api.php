@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/orders', [OrderController::class, 'placeOrder']);
         Route::get('/orders', [OrderController::class, 'index']);
+        Route::post('/cancel-order', [OrderController::class, 'cancelOrder']);
 
         Route::get('/current-authentication', [AuthController::class, 'current_authentication']);
     });
