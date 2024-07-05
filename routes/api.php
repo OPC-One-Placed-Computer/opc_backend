@@ -33,7 +33,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/download/file', [DownloadFileController::class, 'downloadImage']);
 
         Route::post('update-user/{id}', [UserController::class, 'updateProfile']);
-        Route::post('change-password/{id}', [UserController::class, 'changePassword']);
 
         Route::get('/cart', [CartItemController::class, 'index']);
         Route::post('/cart', [CartItemController::class, 'store']);
