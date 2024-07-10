@@ -22,7 +22,7 @@ class ProductController extends BaseController
     public function index(Request $request)
     {
         try {
-            $perPage = $request->input('per_page', 3);
+            $perPage = $request->input('per_page', 25);
             $products = Product::paginate($perPage);
 
             $productCollection = new ProductResourceCollection($products);
@@ -124,7 +124,7 @@ class ProductController extends BaseController
                 return $this->sendError('Keyword is required', [], 400);
             }
 
-            $products = Product::search($query)->paginate(3);
+            $products = Product::search($query)->paginate(25);
 
             if ($products->isEmpty()) {
                 return $this->sendError('No products found', [], 404);
