@@ -4,6 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
@@ -15,15 +17,23 @@ class ProductFactory extends Factory
 
     public function definition()
     {
+        $categories = ['PC', 'Laptop'];
+        $companies = ['ACER', 'LENOVO', 'ASUS', 'MSI'];
+
+        // Generate image file
+        $imageFileName = Str::random(10) . '.png';
+        $imagePath = Storage::putFile('product_images', $this->faker->image(), 'public');
+        $imageName = basename($imagePath);
+
         return [
-            'image_name' => $this->faker->word . '.jpg', // Example for generating random image names
-            'image_path' => '/storage/images/' . $this->faker->image('public/storage/images', 400, 300, null, false),
-            'brand' => $this->faker->company,
             'product_name' => $this->faker->word,
-            'category' => $this->faker->randomElement(['PC', 'Laptop']),
-            'quantity' => $this->faker->numberBetween(1, 50),
-            'description' => $this->faker->paragraph,
             'price' => $this->faker->randomFloat(2, 100, 1000),
+            'description' => $this->faker->sentence,
+            'quantity' => $this->faker->numberBetween(1, 100),
+            'category' => $this->faker->randomElement($categories),
+            'brand' => $this->faker->randomElement($companies),
+            'image_name' => $imageName,
+            'image_path' => '/storage/product_images/' . $imageName,
         ];
     }
 }
