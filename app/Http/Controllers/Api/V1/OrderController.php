@@ -87,6 +87,38 @@ class OrderController extends BaseController
         }
     }
 
+    public function updateStatus(Request $request, int $id)
+    {
+
+        $request->validate([
+            'status' => 'required|in:pending,processing,completed,cancelled',
+        ]);
+
+        $status = $request->input('status');
+
+        $order = Order::find($id);
+
+        if (!$order) {
+            return $this->sendError('Order not found', [], 404);
+        }
+
+        if ($order->status === $status) {
+            return $this->sendError('Order status is already ' . $status, [], 400);
+        }
+
+        $order->status = $status;
+
+        DB::beginTransaction();
+        try {
+            $order->save();
+            DB::commit();
+            return $this->sendResponse('Order status updated successfully', new OrderResource($order));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->sendError('Failed to update order status: ' . $exception->getMessage(), [], 500);
+        }
+    }
+
     public function cancelOrder(Request $request)
     {
         // Validate request data
@@ -117,5 +149,16 @@ class OrderController extends BaseController
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
         }
+    }
+
+    public function allOrders()
+    {
+        $orders = Order::with('orderItems.product')->get();
+
+        if ($orders->isEmpty()) {
+            return $this->sendError('No orders found', [], 404);
+        }
+
+        return $this->sendResponse('All orders fetched successfully', OrderResource::collection($orders));
     }
 }
