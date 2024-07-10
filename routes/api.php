@@ -15,6 +15,11 @@ Route::prefix('v1')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/register', [UserController::class, 'register']);
 
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+    Route::get('/products/search', [ProductController::class, 'search']);
+    Route::get('/products/featured', [ProductController::class, 'featured']);
+    
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
             return $request->user();
@@ -23,11 +28,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/current-authentication', [AuthController::class, 'current_authentication']);
         Route::get('/download/file', [DownloadFileController::class, 'downloadImage']);
 
-        Route::get('/products', [ProductController::class, 'index']);
-        Route::get('/products/{id}', [ProductController::class, 'show']);
-        Route::get('/products/search', [ProductController::class, 'search']);
-        Route::get('/products/featured', [ProductController::class, 'featured']);
-
         Route::middleware('role:admin')->group(function () {
             Route::get('users', [UserController::class, 'index']);
             Route::delete('/user/{id}', [UserController::class, 'destroy']);
@@ -35,10 +35,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/products', [ProductController::class, 'store']);
             Route::post('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
-        });
 
-        Route::group(['middleware' => ['role_or_permission:user|edit profile']], function () {
-            Route::post('/update-user/{id}', [UserController::class, 'updateProfile']);
+            Route::get('/all-orders', [OrderController::class, 'allOrders']);
         });
 
         Route::middleware('role:user')->group(function () {
@@ -50,6 +48,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/orders', [OrderController::class, 'placeOrder']);
             Route::get('/orders', [OrderController::class, 'index']);
             Route::post('/cancel-order', [OrderController::class, 'cancelOrder']);
+        });
+
+        Route::group(['middleware' => ['role_or_permission:user|edit profile']], function () {
+            Route::post('/update-user/{id}', [UserController::class, 'updateProfile']);
+        });
+
+        Route::group(['middleware' => ['permission:update order status']], function () {
+            Route::post('/orders/status/{id}', [OrderController::class, 'updateStatus']);
         });
     });
 });
