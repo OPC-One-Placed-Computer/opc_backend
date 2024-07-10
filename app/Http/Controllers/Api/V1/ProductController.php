@@ -139,38 +139,6 @@ class ProductController extends BaseController
         }
     }
 
-    // public function search(Request $request)
-    // {
-    //     $keyword = strtolower($request->input('keyword'));
-
-    //     if (empty($keyword)) {
-    //         return $this->sendError('Keyword is required', [], 400);
-    //     }
-
-    //     try {
-    //         $products = Product::search($keyword)->paginate(3);
-
-
-    //         if ($products->isEmpty()) {
-    //             return $this->sendError('No products found', [], 400);
-    //         }
-
-    //         $productCollection = new ProductResourceCollection($products);
-    //         $productCollection->additional([
-    //             'pagination' => [
-    //                 'next_page_url' => $products->nextPageUrl(),
-    //                 'prev_page_url' => $products->previousPageUrl(),
-    //             ],
-    //         ]);
-
-    //         return $productCollection;
-    //     } catch (Exception $exception) {
-    //         Log::error('Search error:', ['exception' => $exception]);
-    //         return $this->sendError($exception->getMessage());
-    //     }
-    // }
-
-
     public function update(Request $request, int $id)
     {
         $product = Product::findOrFail($id);
