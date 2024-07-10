@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Log;
 
 class ProductController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('role:admin')->only(['create', 'store', 'edit', 'update', 'destroy']);
+    }
 
     public function index(Request $request)
     {

@@ -13,7 +13,15 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
-        
-        User::factory()->count(2)->create();
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $user = User::find(24);
+        $user->assignRole("admin");
+
+        $user = User::find(25);
+        $user->assignRole("user");
+
+        $user = User::find(26);
+        $user->assignRole("super-admin");
     }
 }
