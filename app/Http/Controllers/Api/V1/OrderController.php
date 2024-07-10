@@ -13,6 +13,22 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('permission:update order status')->only('updateStatus');
+    }
+
+    public function index(Request $request)
+    {
+        $orders = Order::where('user_id', auth()->user()->id)->with('orderItems')->get();
+
+        if ($orders->isEmpty()) {
+            return $this->sendError('Order is empty', [], 404);
+        }
+
+        return $this->sendResponse('Orders fetched successfully', OrderResource::collection($orders));
+    }
+
     public function placeOrder(Request $request)
     {
 
@@ -91,7 +107,7 @@ class OrderController extends BaseController
         }
 
         $order->status = 'cancelled';
-        
+
         DB::beginTransaction();
         try {
             $order->save();
@@ -101,16 +117,5 @@ class OrderController extends BaseController
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
         }
-    }
-
-    public function index(Request $request)
-    {
-        $orders = Order::where('user_id', auth()->user()->id)->with('orderItems')->get();
-
-        if ($orders->isEmpty()) {
-            return $this->sendError('Order is empty', [], 404);
-        }
-
-        return $this->sendResponse('Orders fetched successfully', OrderResource::collection($orders));
     }
 }

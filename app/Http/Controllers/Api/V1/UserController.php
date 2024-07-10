@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('role_or_permission:user|edit profile');
+    }
+
     public function index()
     {
         $users = User::all();
@@ -109,7 +114,6 @@ class UserController extends BaseController
                 $responseData['new_password'] = $request->new_password;
             }
             return response()->json($responseData);
-
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to update profile', [], 500);
