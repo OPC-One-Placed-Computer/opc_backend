@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Resources\AuthResource;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -38,7 +39,7 @@ class AuthController extends BaseController
         $user = auth()->user();
 
         if ($user) {
-            return $this->sendResponse('User authenticated', new AuthResource($user));
+            return $this->sendResponse('User authenticated', new UserResource($user));
         } else {
             return response()->json(['message' => 'Unauthenticated User'], 401);
         }

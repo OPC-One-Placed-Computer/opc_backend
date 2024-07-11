@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends BaseController
 {
-    public function __construct()
-    {
-        $this->middleware('permission:update order status')->only('updateStatus');
-    }
 
     public function index(Request $request)
     {
@@ -84,38 +80,6 @@ class OrderController extends BaseController
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError($exception->getMessage());
-        }
-    }
-
-    public function updateStatus(Request $request, int $id)
-    {
-
-        $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled',
-        ]);
-
-        $status = $request->input('status');
-
-        $order = Order::find($id);
-
-        if (!$order) {
-            return $this->sendError('Order not found', [], 404);
-        }
-
-        if ($order->status === $status) {
-            return $this->sendError('Order status is already ' . $status, [], 400);
-        }
-
-        $order->status = $status;
-
-        DB::beginTransaction();
-        try {
-            $order->save();
-            DB::commit();
-            return $this->sendResponse('Order status updated successfully', new OrderResource($order));
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return $this->sendError('Failed to update order status: ' . $exception->getMessage(), [], 500);
         }
     }
 
