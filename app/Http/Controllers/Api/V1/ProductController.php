@@ -66,7 +66,7 @@ class ProductController extends BaseController
             $this->sendError($exeption);
         }
     }
-
+  
     public function update(Request $request, int $id)
     {
         $product = Product::findOrFail($id);
