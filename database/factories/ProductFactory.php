@@ -28,9 +28,9 @@ class ProductFactory extends Factory
 
         return [
             'product_name' => $this->faker->word,
-            'price' => $this->faker->randomFloat(2, 100, 1000),
+            'price' => $this->faker->randomFloat(2, 100, 100000),
             'description' => $this->faker->sentence,
-            'quantity' => $this->faker->numberBetween(1, 100),
+            'quantity' => $this->faker->numberBetween(1, 50),
             'category' => $this->faker->randomElement($categories),
             'brand' => $this->faker->randomElement($companies),
             'image_name' => $imageName,
