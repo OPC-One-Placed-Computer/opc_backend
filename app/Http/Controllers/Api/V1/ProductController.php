@@ -40,9 +40,9 @@ class ProductController extends BaseController
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $fileName = $this->normalizeFileName($image->getClientOriginalName());
-                $imagePath = '/storage/product_images/' . $fileName;
+                $imagePath = 'product_images/' . $fileName;
 
-                $image->storeAs('product_images', $fileName, 'public');
+                $image->storeAs('product_images', $fileName, 'local');
 
                 $imageName = basename($imagePath);
             }
@@ -66,7 +66,7 @@ class ProductController extends BaseController
             $this->sendError($exeption);
         }
     }
-  
+
     public function update(Request $request, int $id)
     {
         $product = Product::findOrFail($id);
@@ -95,9 +95,9 @@ class ProductController extends BaseController
 
                 $image = $request->file('image');
                 $fileName = $this->normalizeFileName($image->getClientOriginalName());
-                $imagePath = '/storage/product_images/' . $fileName;
+                $imagePath = 'product_images/' . $fileName;
 
-                $image->storeAs('product_images', $fileName, 'public');
+                $image->storeAs('product_images', $fileName, 'local');
 
                 $imageName = basename($imagePath);
             }
@@ -121,7 +121,7 @@ class ProductController extends BaseController
             $this->sendError($exeption);
         }
     }
-    
+
     public function destroy(int $id)
     {
         try {
