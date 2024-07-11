@@ -22,20 +22,6 @@ class Product extends Model
         'price',
     ];
 
-    public function toSearchableArray()
-    {
-        $array = $this->only([
-            'product_name',
-            'brand',
-            'category',
-            'description'
-        ]);
-        
-        $array = array_map('strtolower', $array);
-
-        return $array;
-    }
-
     /**
      * Product can have multiple order items associated
      * 
