@@ -20,7 +20,6 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/products', [ProductsController::class, 'index']);
     Route::get('/products/{id}', [ProductsController::class, 'show']);
-    Route::get('/products/search', [ProductsController::class, 'search']);
     Route::get('/products/featured', [ProductsController::class, 'featured']);
     
     Route::middleware('auth:sanctum')->group(function () {

@@ -10,29 +10,40 @@ class ProductResourceCollection extends ResourceCollection
     /**
      * Transform the resource collection into an array.
      *
+     * @param  Request  $request
      * @return array<int|string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray($request): array
     {
+
+        $queryParams = $request->query();
+
+        unset($queryParams['page']);
+
+        $queryString = http_build_query($queryParams);
+
+        $self = url()->current() . "?" . http_build_query(array_merge(['page' => $this->currentPage()], $queryParams));
+        $first = url()->current() . "?" . http_build_query(array_merge(['page' => 1], $queryParams));
+        $last = url()->current() . "?" . http_build_query(array_merge(['page' => $this->lastPage()], $queryParams));
 
         return [
             'data' => $this->collection->map(function ($item) {
                 return new ProductResource($item);
             }),
+
             'links' => [
-                'self' => url()->current(),
-                'first' => $this->url(1),
-                'last' => $this->url($this->lastPage()),
-                'prev' => $this->previousPageUrl(),
-                'next' => $this->nextPageUrl(),
+                'self' => $self,
+                'first' => $first,
+                'last' => $last,
+                'prev' => $this->previousPageUrl() ? $this->previousPageUrl() . ($queryString ? '&' . $queryString : '') : null,
+                'next' => $this->nextPageUrl() ? $this->nextPageUrl() . ($queryString ? '&' . $queryString : '') : null,
             ],
+
             'meta' => [
                 'current_page' => $this->currentPage(),
-                'from' => $this->firstItem(),
                 'last_page' => $this->lastPage(),
                 'path' => url()->current(),
                 'per_page' => $this->perPage(),
-                'to' => $this->lastItem(),
                 'total' => $this->total(),
             ],
         ];
