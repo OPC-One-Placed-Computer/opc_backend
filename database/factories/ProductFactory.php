@@ -17,12 +17,13 @@ class ProductFactory extends Factory
 
     public function definition()
     {
+       
         $categories = ['PC', 'Laptop'];
         $companies = ['ACER', 'LENOVO', 'ASUS', 'MSI'];
 
         // Generate image file
         $imageFileName = Str::random(10) . '.png';
-        $imagePath = Storage::putFile('product_images', $this->faker->image(), 'public');
+        $imagePath = Storage::disk('local')->putFile('product_images', $this->faker->image());
         $imageName = basename($imagePath);
 
         return [
@@ -33,7 +34,7 @@ class ProductFactory extends Factory
             'category' => $this->faker->randomElement($categories),
             'brand' => $this->faker->randomElement($companies),
             'image_name' => $imageName,
-            'image_path' => '/storage/product_images/' . $imageName,
+            'image_path' => 'product_images/' . $imageName,
         ];
     }
 }
