@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartItemController;
 use App\Http\Controllers\Api\V1\DownloadFileController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\OrderStatusController;
+use App\Http\Controllers\Api\V1\UpdateProfileController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,10 +18,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/register', [UserController::class, 'register']);
 
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
-    Route::get('/products/search', [ProductController::class, 'search']);
-    Route::get('/products/featured', [ProductController::class, 'featured']);
+    Route::get('/products', [ProductsController::class, 'index']);
+    Route::get('/products/{id}', [ProductsController::class, 'show']);
+    Route::get('/products/search', [ProductsController::class, 'search']);
+    Route::get('/products/featured', [ProductsController::class, 'featured']);
     
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
@@ -51,11 +54,11 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::group(['middleware' => ['role_or_permission:user|edit profile']], function () {
-            Route::post('/update-user/{id}', [UserController::class, 'updateProfile']);
+            Route::post('/update-user/{id}', [UpdateProfileController::class, 'updateProfile']);
         });
 
         Route::group(['middleware' => ['permission:update order status']], function () {
-            Route::post('/orders/status/{id}', [OrderController::class, 'updateStatus']);
+            Route::post('/orders/status/{id}', [OrderStatusController::class, 'updateStatus']);
         });
     });
 });

@@ -12,10 +12,13 @@ use Exception;
 
 class CartItemController extends BaseController
 {
-    
+    public function __construct()
+    {
+        $this->middleware('role:user')->only(['index', 'store', 'update', 'destroy']);
+    }
+
     public function index()
     {
-        
         // Fetch cart items for the current user
         $cartItems = CartItem::where('user_id', auth()->user()->id)->with('product')->get();
 
