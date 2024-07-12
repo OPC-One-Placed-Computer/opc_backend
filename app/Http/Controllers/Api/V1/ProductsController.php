@@ -33,11 +33,14 @@ class ProductsController extends BaseController
                 return $q->where('brand', $request->input('brand'));
             });
 
+            $query->when($request->filled('featured'), function ($q) use ($request) {
+                $isFeatured = $request->input('featured') == 'true' ? 1 : 0;
+                return $q->where('featured', $isFeatured);
+            });
+
             $minPrice = $request->input('min_price', 0);
             $maxPrice = $request->input('max_price', 999999);
             $query->whereBetween('price', [$minPrice, $maxPrice]);
-
-            $query->where('featured', true);
 
             $perPage = $request->input('per_page', 25);
             $products = $query->paginate($perPage);
