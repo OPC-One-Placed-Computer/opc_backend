@@ -33,6 +33,11 @@ class ProductsController extends BaseController
                 return $q->where('brand', $request->input('brand'));
             });
 
+            $query->when($request->filled('featured'), function ($q) use ($request) {
+                $isFeatured = $request->input('featured') == 'true' ? 1 : 0;
+                return $q->where('featured', $isFeatured);
+            });
+
             $minPrice = $request->input('min_price', 0);
             $maxPrice = $request->input('max_price', 999999);
             $query->whereBetween('price', [$minPrice, $maxPrice]);
@@ -66,26 +71,4 @@ class ProductsController extends BaseController
 
         return $this->sendResponse('Product successfully fetched', new ProductResource($product));
     }
-
-    //     public function featured()
-    // {
-    //     // Fetch featured products
-    //     $featuredProducts = Product::where('featured', 1)->get();
-
-    //     // Debugging: output the raw query and results
-    //     $debugInfo = [
-    //         'query' => Product::where('featured', 1)->toSql(),
-    //         'results' => $featuredProducts
-    //     ];
-
-    //     if ($featuredProducts->isEmpty()) {
-    //         return $this->sendError('No featured products found', $debugInfo);
-    //     }
-
-    //     return $this->sendResponse('Featured products fetched', [
-    //         'products' => ProductResource::collection($featuredProducts),
-    //         'debug' => $debugInfo
-    //     ]);
-    // }
-
 }
