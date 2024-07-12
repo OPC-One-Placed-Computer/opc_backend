@@ -37,6 +37,8 @@ class ProductsController extends BaseController
             $maxPrice = $request->input('max_price', 999999);
             $query->whereBetween('price', [$minPrice, $maxPrice]);
 
+            $query->where('featured', true);
+
             $perPage = $request->input('per_page', 25);
             $products = $query->paginate($perPage);
 
@@ -66,26 +68,4 @@ class ProductsController extends BaseController
 
         return $this->sendResponse('Product successfully fetched', new ProductResource($product));
     }
-
-    //     public function featured()
-    // {
-    //     // Fetch featured products
-    //     $featuredProducts = Product::where('featured', 1)->get();
-
-    //     // Debugging: output the raw query and results
-    //     $debugInfo = [
-    //         'query' => Product::where('featured', 1)->toSql(),
-    //         'results' => $featuredProducts
-    //     ];
-
-    //     if ($featuredProducts->isEmpty()) {
-    //         return $this->sendError('No featured products found', $debugInfo);
-    //     }
-
-    //     return $this->sendResponse('Featured products fetched', [
-    //         'products' => ProductResource::collection($featuredProducts),
-    //         'debug' => $debugInfo
-    //     ]);
-    // }
-
 }
