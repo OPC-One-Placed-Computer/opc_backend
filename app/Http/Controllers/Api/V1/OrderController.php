@@ -4,28 +4,54 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\OrderResourceCollection;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends BaseController
 {
-
     public function index(Request $request)
     {
-        $orders = Order::where('user_id', auth()->user()->id)
-            ->where('status', '!=', 'cancelled')
-            ->with('orderItems.product')
-            ->get();
+        try {
+            $query = Order::where('user_id', auth()->user()->id)
+                ->with('orderItems.product');
 
-        if ($orders->isEmpty()) {
-            return $this->sendError('No orders found', [], 404);
+            $query->when($request->filled('status'), function ($q) use ($request) {
+                if ($request->input('status') === 'active') {
+                    return $q->whereNotIn('status', ['pending', 'completed', 'cancelled']);
+                } else {
+                    return $q->where('status', $request->input('status'));
+                }
+            });
+
+            $query->when($request->filled('sort_order'), function ($q) use ($request) {
+                return $q->orderBy('created_at', $request->input('sort_order'));
+            }, function ($q) {
+                return $q->orderBy('created_at', 'desc');
+            });
+
+            $perPage = $request->input('per_page', 25);
+            $orders = $query->paginate($perPage);
+
+            if ($orders->isEmpty()) {
+                return response()->json([
+                    'status' => 'false',
+                    'message' => 'No orders found matching the provided filters.',
+                    'filters' => $request->all(),
+                ], 404);
+            }
+
+            $orderCollection = new OrderResourceCollection($orders);
+
+            return $this->sendResponse('Orders fetched successfully', $orderCollection);
+        } catch (Exception $exception) {
+            return $this->sendError('Failed to fetch orders', [], 500);
         }
-
-        return $this->sendResponse('Orders fetched successfully', OrderResource::collection($orders));
     }
 
     public function placeOrder(Request $request)
@@ -111,7 +137,7 @@ class OrderController extends BaseController
         try {
             $order->save();
             DB::commit();
-            return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
+            return $this->sendResponse('Orders fetched successfully', new OrderResource($order));
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
@@ -129,14 +155,64 @@ class OrderController extends BaseController
         return $this->sendResponse('Cancelled orders fetched successfully', OrderResource::collection($cancelledOrders));
     }
 
-    public function allOrders()
+    public function allOrders(Request $request)
     {
-        $orders = Order::with('orderItems.product')->get();
+        try {
+            $query = Order::with('orderItems.product');
 
-        if ($orders->isEmpty()) {
-            return $this->sendError('No orders found', [], 404);
+            $query->when($request->filled('status'), function ($q) use ($request) {
+                if ($request->input('status') === 'active') {
+                    return $q->whereNotIn('status', ['pending', 'completed', 'cancelled']);
+                } else {
+                    return $q->where('status', $request->input('status'));
+                }
+            });
+
+            $query->when($request->filled('start_date') && $request->filled('end_date'), function ($q) use ($request) {
+                $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+                $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+                return $q->whereBetween('created_at', [$startDate, $endDate]);
+            });
+
+            $query->when($request->filled('today'), function ($q) {
+                return $q->whereDate('created_at', Carbon::today());
+            });
+
+            $query->when($request->filled('this_week'), function ($q) {
+                return $q->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            });
+
+            $query->when($request->filled('this_month'), function ($q) {
+                return $q->whereYear('created_at', Carbon::now()->year)
+                    ->whereMonth('created_at', Carbon::now()->month);
+            });
+
+            $query->when($request->filled('year'), function ($q) use ($request) {
+                return $q->whereYear('created_at', $request->input('year'));
+            });
+
+            $query->when($request->filled('sort_order'), function ($q) use ($request) {
+                return $q->orderBy('created_at', $request->input('sort_order'));
+            }, function ($q) {
+                return $q->orderBy('created_at', 'desc');
+            });
+
+            $perPage = $request->input('per_page', 25);
+            $orders = $query->paginate($perPage);
+
+            if ($orders->isEmpty()) {
+                return response()->json([
+                    'status' => 'false',
+                    'message' => 'No orders found matching the provided filters.',
+                    'filters' => $request->all(),
+                ], 404);
+            }
+
+            $orderCollection = new OrderResourceCollection($orders);
+
+            return $this->sendResponse('Orders fetched successfully', $orderCollection);
+        } catch (Exception $exception) {
+            return $this->sendError('Failed to fetch orders', [], 500);
         }
-
-        return $this->sendResponse('All orders fetched successfully', OrderResource::collection($orders));
     }
 }
