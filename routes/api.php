@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-
 Route::prefix('v1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -21,7 +20,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/products', [ProductsController::class, 'index']);
     Route::get('/products/{id}', [ProductsController::class, 'show']);
     Route::get('/products/featured', [ProductsController::class, 'featured']);
-    
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
             return $request->user();
@@ -38,7 +37,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
-            Route::get('/all-orders', [OrderController::class, 'allOrders']);
+            Route::get('/orders/all', [OrderController::class, 'allOrders']);
+            Route::get('/orders/cancelled', [OrderStatusController::class, 'cancelledOrders']);
         });
 
         Route::middleware('role:user')->group(function () {
