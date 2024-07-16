@@ -20,7 +20,7 @@ class OrderStatusController extends BaseController
     public function updateStatus(Request $request, int $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,processing,shipped,completed,cancelled',
+            'status' => 'required',
         ]);
 
         $status = $request->input('status');
