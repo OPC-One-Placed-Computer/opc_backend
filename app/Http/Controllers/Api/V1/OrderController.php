@@ -16,10 +16,13 @@ class OrderController extends BaseController
 
     public function index(Request $request)
     {
-        $orders = Order::where('user_id', auth()->user()->id)->with('orderItems')->get();
+        $orders = Order::where('user_id', auth()->user()->id)
+            ->where('status', '!=', 'cancelled')
+            ->with('orderItems.product')
+            ->get();
 
         if ($orders->isEmpty()) {
-            return $this->sendError('Order is empty', [], 404);
+            return $this->sendError('No orders found', [], 404);
         }
 
         return $this->sendResponse('Orders fetched successfully', OrderResource::collection($orders));
@@ -113,6 +116,17 @@ class OrderController extends BaseController
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
         }
+    }
+
+    public function cancelledOrders()
+    {
+        $cancelledOrders = Order::where('user_id', auth()->user()->id)->where('status', 'cancelled')->with('orderItems.product')->get();
+
+        if ($cancelledOrders->isEmpty()) {
+            return $this->sendError('No cancelled orders found', [], 404);
+        }
+
+        return $this->sendResponse('Cancelled orders fetched successfully', OrderResource::collection($cancelledOrders));
     }
 
     public function allOrders()

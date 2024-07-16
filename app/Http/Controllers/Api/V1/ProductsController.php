@@ -47,6 +47,7 @@ class ProductsController extends BaseController
 
             if ($products->isEmpty()) {
                 return response()->json([
+                    'status' => 'false',
                     'message' => 'No products found matching the provided filters.',
                     'filters' => $request->all(),
                 ], 404);
