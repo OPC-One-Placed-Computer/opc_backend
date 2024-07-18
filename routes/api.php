@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrderStatusController;
 use App\Http\Controllers\Api\V1\UpdateProfileController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/products', [ProductsController::class, 'index']);
     Route::get('/products/{id}', [ProductsController::class, 'show']);
     Route::get('/products/featured', [ProductsController::class, 'featured']);
+
+    Route::get('/checkout/success', [PaymentController::class, 'checkoutSuccess'])->name('checkout.success');;
+    Route::get('/checkout/cancel', [PaymentController::class, 'checkoutCancel'])->name('checkout.cancel');;
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
@@ -46,7 +50,8 @@ Route::prefix('v1')->group(function () {
             Route::put('/cart/{id}', [CartItemController::class, 'update']);
             Route::delete('/cart/{id}', [CartItemController::class, 'destroy']);
 
-            Route::post('/orders', [OrderController::class, 'placeOrder']);
+            Route::post('/orders', [PaymentController::class, 'placeOrder']);
+
             Route::get('/orders', [OrderController::class, 'index']);
             Route::post('/orders/cancel', [OrderController::class, 'cancelOrder']);
             Route::get('/orders/cancelled', [OrderController::class, 'cancelledOrders']);
