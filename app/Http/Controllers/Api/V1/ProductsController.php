@@ -57,12 +57,11 @@ class ProductsController extends BaseController
 
             return $this->sendResponse('Products fetched successfully', $productCollection);
         } catch (Exception $exception) {
-            Log::error('Error fetching products', ['exception' => $exception]);
             return $this->sendError('Failed to fetch products', [], 500);
         }
     }
 
-    public function show($id)
+    public function show(int $id)
     {
         $product = Product::find($id);
 

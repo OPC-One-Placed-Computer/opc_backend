@@ -78,7 +78,7 @@ class OrderController extends BaseController
         try {
             $order->save();
             DB::commit();
-            return $this->sendResponse('Orders fetched successfully', new OrderResource($order));
+            return $this->sendResponse('Cancel order successfully', new OrderResource($order));
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);

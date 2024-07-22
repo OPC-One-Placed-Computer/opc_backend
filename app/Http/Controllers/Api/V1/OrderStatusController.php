@@ -63,15 +63,4 @@ class OrderStatusController extends BaseController
             return $this->sendError('Failed to update order status: ' . $exception->getMessage(), [], 500);
         }
     }
-
-    public function cancelledOrders()
-    {
-        $orders = Order::where('status', 'cancelled')->with('orderItems.product')->get();
-
-        if ($orders->isEmpty()) {
-            return $this->sendError('No cancelled orders found', [], 404);
-        }
-
-        return $this->sendResponse('Cancelled orders fetched successfully', OrderResource::collection($orders));
-    }
 }
