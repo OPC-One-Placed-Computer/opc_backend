@@ -10,8 +10,11 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Stripe\Refund;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use Stripe\Webhook;
 
 class PaymentController extends BaseController
 {
@@ -28,16 +31,41 @@ class PaymentController extends BaseController
         $user = auth()->user();
         $total = $validatedData['total'];
         $cartItemIds = collect($validatedData['cart_items']['id'])->toArray();
-        // dd($cartItemIds);
         $cartItems = CartItem::whereIn('id', $cartItemIds)->where('user_id', $user->id)->get();
 
         if ($cartItems->isEmpty()) {
             return $this->sendError('Selected cart items not found or do not belong to the user', [], 400);
         }
 
-        if ($validatedData['payment_method'] === 'stripe') {
-            try {
+        DB::beginTransaction();
+        try {
+            $orderStatus = $validatedData['payment_method'] === 'stripe' ? 'awaiting payment' : 'pending';
 
+            $order = Order::create([
+                'user_id' => $user->id,
+                'full_name' => $validatedData['full_name'],
+                'shipping_address' => $validatedData['shipping_address'],
+                'total' => $total,
+                'status' => $orderStatus,
+                'payment_method' => $validatedData['payment_method'],
+            ]);
+
+            foreach ($cartItems as $cartItem) {
+                $product = $cartItem->product;
+
+                if ($product) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $cartItem->product_id,
+                        'quantity' => $cartItem->quantity,
+                        'subtotal' => $product->price * $cartItem->quantity,
+                    ]);
+                }
+
+                $cartItem->delete();
+            }
+
+            if ($validatedData['payment_method'] === 'stripe') {
                 $apiKey = config('cashier.secret');
                 Stripe::setApiKey($apiKey);
 
@@ -58,109 +86,140 @@ class PaymentController extends BaseController
                     }
                 }
 
-                $checkout_session = Session::create([
+                $checkoutSession = Session::create([
                     'payment_method_types' => ['card'],
                     'line_items' => $lineItems,
                     'mode' => 'payment',
-                    'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('checkout.cancel'),
+                    'success_url' => url('/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}'),
+                    'cancel_url' => url('/api/v1/payment/cancel?session_id={CHECKOUT_SESSION_ID}'),
+                    'metadata' => [
+                        'order_id' => $order->id,
+                    ],
                 ]);
 
-                return $this->sendResponse('Order placed successfully', [
-                    'url' => $checkout_session->url,
-                ]);
-            } catch (Exception $exception) {
-                return $this->sendError($exception->getMessage());
-            }
-        } else {
-            DB::beginTransaction();
-            try {
-                $order = Order::create([
-                    'user_id' => auth()->user()->id,
-                    'full_name' => $validatedData['full_name'],
-                    'shipping_address' => $validatedData['shipping_address'],
-                    'total' => $total,
-                    'status' => 'pending',
-                    'payment_method' => $validatedData['payment_method'],
-                ]);
-
-                foreach ($cartItems as $cartItem) {
-                    $product = $cartItem->product;
-
-                    if ($product) {
-                        OrderItem::create([
-                            'order_id' => $order->id,
-                            'product_id' => $cartItem->product_id,
-                            'quantity' => $cartItem->quantity,
-                            'subtotal' => $product->price * $cartItem->quantity,
-                        ]);
-                    }
-
-                    $cartItem->delete();
-                }
-
-                $order->load('orderItems.product');
+                $order->stripe_session_id = $checkoutSession->id;
+                $order->save();
 
                 DB::commit();
-                return $this->sendResponse('Order placed successfully', new OrderResource($order));
-            } catch (Exception $exception) {
-                DB::rollBack();
-                return $this->sendError($exception->getMessage());
-            }
-        }
-    }
 
-    public function checkoutSuccess(Request $request)
-    {
-        $session_id = $request->get('session_id');
-        $user = auth()->user();
-    
-        if (!$user) {
-            return $this->sendError('User not authenticated', [], 401);
-        }
-    
-        $apiKey = config('cashier.secret');
-        Stripe::setApiKey($apiKey);
-        
-        try {
-            $checkout_session = Session::retrieve($session_id);
-            $cartItems = CartItem::where('user_id', $user->id)->get();
-            $totalAmount = $checkout_session->amount_total / 100;
-    
-            DB::beginTransaction();
-            
-            $order = Order::create([
-                'user_id' => $user->id,
-                'full_name' => $user->full_name,
-                'shipping_address' => $user->shipping_address,
-                'total' => $totalAmount,
-                'status' => 'processing',
-                'payment_method' => 'stripe',
-            ]);
-    
-            foreach ($cartItems as $cartItem) {
-                $product = $cartItem->product;
-                if ($product) {
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_id' => $cartItem->product_id,
-                        'quantity' => $cartItem->quantity,
-                        'subtotal' => $product->price * $cartItem->quantity,
-                    ]);
-                }
-                $cartItem->delete();
+                return $this->sendResponse('Proceed to payment', [
+                    'url' => $checkoutSession->url,
+                ]);
             }
-    
+
             DB::commit();
+            $order->load('orderItems.product');
+
             return $this->sendResponse('Order placed successfully', new OrderResource($order));
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError($exception->getMessage());
         }
-    }    
+    }
 
-    public function checkoutCancel()
+    public function handleWebhook(Request $request)
     {
-        return $this->sendError('Checkout canceled by the user', [], 400);
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $endpointSecret = config('services.stripe.webhook_secret');
+
+        try {
+            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+        } catch (\UnexpectedValueException $e) {
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+
+        if ($event->type === 'checkout.session.completed') {
+            $session = $event->data->object;
+
+            $order = Order::where('stripe_session_id', $session->id)->first();
+            if ($order) {
+                $order->status = 'paid';
+                $order->save();
+            }
+        } elseif ($event->type === 'checkout.session.expired') {
+            $session = $event->data->object;
+
+            $order = Order::where('stripe_session_id', $session->id)->first();
+            if ($order) {
+                $order->status = 'no payment received';
+                $order->save();
+            }
+        }
+
+        return response()->json(['status' => 'success'], 200);
+    }
+
+    public function checkoutSuccess(Request $request)
+    {
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            return $this->sendError('Session ID is required', [], 400);
+        }
+
+        $apiKey = config('cashier.secret');
+        Stripe::setApiKey($apiKey);
+
+        try {
+            $session = Session::retrieve($sessionId);
+
+            if ($session->payment_status !== 'paid') {
+                return $this->sendError('Invalid or unpaid session', [], 400);
+            }
+
+            $order = Order::where('stripe_session_id', $session->id)->with('orderItems.product')->first();
+            if (!$order) {
+                return $this->sendError('Order not found', [], 404);
+            }
+
+            return $this->sendResponse('Order fetched successfully', new OrderResource($order));
+        } catch (Exception $exception) {
+            return $this->sendError($exception->getMessage());
+        }
+    }
+
+
+    public function checkoutCancel(Request $request)
+    {
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            Log::error('Checkout Cancel: Session ID is missing', ['request' => $request->all()]);
+            return $this->sendError('Session ID is required', [], 400);
+        }
+
+        $apiKey = config('cashier.secret');
+        Stripe::setApiKey($apiKey);
+
+        try {
+            $session = Session::retrieve($sessionId);
+
+            $order = Order::where('stripe_session_id', $session->id)->with('orderItems.product')->first();
+            if (!$order) {
+                return $this->sendError('Order not found', [], 404);
+            }
+
+            if ($session->payment_status === 'paid') {
+                $refund = Refund::create([
+                    'payment_intent' => $session->payment_intent,
+                ]);
+
+                $order->status = 'refunded';
+                $order->save();
+
+                return $this->sendResponse('Payment refunded successfully', new OrderResource($order));
+            } else {
+                $order->status = 'cancelled';
+                $order->save();
+
+                return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
+            }
+        } catch (Exception $exception) {
+            Log::error('Checkout Cancel Error', ['exception' => $exception]);
+            return $this->sendError($exception->getMessage());
+        }
     }
 }

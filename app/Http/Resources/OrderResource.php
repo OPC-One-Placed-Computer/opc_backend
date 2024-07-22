@@ -23,9 +23,10 @@ class OrderResource extends JsonResource
             'total' => $this->total,
             'status' => $this->status,
             'payment_method' => $this->payment_method,
+            'stripe_session_id' => $this->stripe_session_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'order_items' => OrderItemResource::collection($this->orderItems),
+            'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
         ];
     }
 }
