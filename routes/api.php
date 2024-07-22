@@ -22,8 +22,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{id}', [ProductsController::class, 'show']);
     Route::get('/products/featured', [ProductsController::class, 'featured']);
 
-    Route::get('/checkout/success', [PaymentController::class, 'checkoutSuccess'])->name('checkout.success');;
-    Route::get('/checkout/cancel', [PaymentController::class, 'checkoutCancel'])->name('checkout.cancel');;
+    Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
+
+    Route::get('/payment/success', [PaymentController::class, 'checkoutSuccess']);
+    Route::get('/payment/cancel', [PaymentController::class, 'checkoutCancel']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
@@ -53,8 +55,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/orders', [PaymentController::class, 'placeOrder']);
 
             Route::get('/orders', [OrderController::class, 'index']);
+            Route::get('/orders/{id}', [OrderController::class, 'show']);
             Route::post('/orders/cancel', [OrderController::class, 'cancelOrder']);
-            Route::get('/orders/cancelled', [OrderController::class, 'cancelledOrders']);
         });
 
         Route::group(['middleware' => ['role_or_permission:user|edit profile']], function () {
