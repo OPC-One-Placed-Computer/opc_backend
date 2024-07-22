@@ -26,6 +26,8 @@ class PaymentController extends BaseController
             'total' => 'required|numeric|min:0',
             'payment_method' => 'required|in:stripe,cod',
             'cart_items' => 'required|array',
+            'success_url' => 'nullable|string',
+            'cancel_url' => 'nullable|string',
         ]);
 
         $user = auth()->user();
@@ -86,12 +88,24 @@ class PaymentController extends BaseController
                     }
                 }
 
+                if (isset($validatedData['success_url'])) {
+                    $success_url = $validatedData['success_url'] . "/" . $order->id;
+                } else {
+                    $success_url = route('checkout.success');
+                }
+
+                if (isset($validatedData['cancel_url'])) {
+                    $cancel_url = $validatedData['cancel_url'] . "/" . $order->id;
+                } else {
+                    $cancel_url = route('checkout.cancel');
+                }
+
                 $checkoutSession = Session::create([
                     'payment_method_types' => ['card'],
                     'line_items' => $lineItems,
                     'mode' => 'payment',
-                    'success_url' => url('/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}'),
-                    'cancel_url' => url('/api/v1/payment/cancel?session_id={CHECKOUT_SESSION_ID}'),
+                    'success_url' => $success_url,
+                    'cancel_url' => $cancel_url,
                     'metadata' => [
                         'order_id' => $order->id,
                     ],
@@ -103,6 +117,7 @@ class PaymentController extends BaseController
                 DB::commit();
 
                 return $this->sendResponse('Proceed to payment', [
+                    'session_id' => $checkoutSession->id,
                     'url' => $checkoutSession->url,
                 ]);
             }

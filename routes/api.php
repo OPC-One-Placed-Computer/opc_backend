@@ -4,8 +4,10 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartItemController;
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DownloadFileController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\OrdersController;
 use App\Http\Controllers\Api\V1\OrderStatusController;
 use App\Http\Controllers\Api\V1\UpdateProfileController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -24,8 +26,7 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
 
-    Route::get('/payment/success', [PaymentController::class, 'checkoutSuccess']);
-    Route::get('/payment/cancel', [PaymentController::class, 'checkoutCancel']);
+    Route::get('stripe/status', [PaymentController::class, 'stripeOrderStatus']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {
@@ -43,7 +44,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
-            Route::get('/orders/all', [OrderController::class, 'allOrders']);
+            Route::get('/orders/all', [OrdersController::class, 'allOrders']);
         });
 
         Route::middleware('role:user')->group(function () {
