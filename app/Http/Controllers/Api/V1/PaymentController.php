@@ -10,8 +10,6 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Stripe\Refund;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use Stripe\Webhook;
@@ -192,48 +190,6 @@ class PaymentController extends BaseController
 
             return $this->sendResponse('Order fetched successfully', new OrderResource($order));
         } catch (Exception $exception) {
-            return $this->sendError($exception->getMessage());
-        }
-    }
-
-
-    public function checkoutCancel(Request $request)
-    {
-        $sessionId = $request->query('session_id');
-
-        if (!$sessionId) {
-            Log::error('Checkout Cancel: Session ID is missing', ['request' => $request->all()]);
-            return $this->sendError('Session ID is required', [], 400);
-        }
-
-        $apiKey = config('cashier.secret');
-        Stripe::setApiKey($apiKey);
-
-        try {
-            $session = Session::retrieve($sessionId);
-
-            $order = Order::where('stripe_session_id', $session->id)->with('orderItems.product')->first();
-            if (!$order) {
-                return $this->sendError('Order not found', [], 404);
-            }
-
-            if ($session->payment_status === 'paid') {
-                $refund = Refund::create([
-                    'payment_intent' => $session->payment_intent,
-                ]);
-
-                $order->status = 'refunded';
-                $order->save();
-
-                return $this->sendResponse('Payment refunded successfully', new OrderResource($order));
-            } else {
-                $order->status = 'cancelled';
-                $order->save();
-
-                return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
-            }
-        } catch (Exception $exception) {
-            Log::error('Checkout Cancel Error', ['exception' => $exception]);
             return $this->sendError($exception->getMessage());
         }
     }

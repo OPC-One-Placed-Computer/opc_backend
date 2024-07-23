@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CartItemController;
-use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DownloadFileController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\OrdersController;
