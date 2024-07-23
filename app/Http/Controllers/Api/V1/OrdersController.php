@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use App\Http\Resources\OrderResourceCollection;
 use App\Models\Order;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 
-class OrdersController extends Controller
+class OrdersController extends BaseController
 {
     public function allOrders(Request $request)
     {
@@ -17,8 +17,12 @@ class OrdersController extends Controller
             $query = Order::with('orderItems.product');
 
             $query->when($request->filled('status'), function ($q) use ($request) {
-                if ($request->input('status') === 'active') {
-                    return $q->whereNotIn('status', ['pending', 'completed', 'cancelled']);
+                $status = $request->input('status');
+
+                if ($status === 'active') {
+                    return $q->whereIn('status', ['pending', 'paid']);
+                } elseif ($status === 'inactive') {
+                    return $q->whereIn('status', ['completed', 'cancelled', 'refunded']);
                 } else {
                     return $q->where('status', $request->input('status'));
                 }
