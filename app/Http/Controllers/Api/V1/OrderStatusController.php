@@ -34,33 +34,43 @@ class OrderStatusController extends BaseController
             return $this->sendError('Order status is already ' . $status, [], 400);
         }
 
-        if ($order->status !== 'pending' && $status === 'pending') {
-            return $this->sendError('Cannot revert to pending status from ' . $order->status, [], 400);
-        }
+        if (($order->status === 'pending' || $order->status === 'paid') && $status === 'confirmed') {
+            DB::beginTransaction();
+            try {
+                $quantityChanges = [];
 
-        DB::beginTransaction();
-        try {
-            if ($order->status === 'pending' && in_array($status, ['processing', 'shipped', 'completed'])) {
                 foreach ($order->orderItems as $orderItem) {
                     $product = Product::find($orderItem->product_id);
                     if ($product) {
+                        $previousQuantity = $product->quantity;
                         $product->quantity -= $orderItem->quantity;
                         if ($product->quantity < 0) {
-                            return $this->sendError('Not enough stock for product ID: ' . $orderItem->product_id, [], 400);
+                            throw new Exception('Not enough stock for product ID: ' . $orderItem->product_id);
                         }
                         $product->save();
+
+                        $quantityChanges[] = [
+                            'product_id' => $product->id,
+                            'previous_quantity' => $previousQuantity,
+                            'new_quantity' => $product->quantity,
+                        ];
                     }
                 }
+
+                $order->status = $status;
+                $order->save();
+                DB::commit();
+
+                return $this->sendResponse('Order status updated to confirmed successfully', [
+                    'order' => new OrderResource($order),
+                    'quantity_changes' => $quantityChanges,
+                ]);
+            } catch (Exception $exception) {
+                DB::rollBack();
+                return $this->sendError('Failed to update order status to confirmed: ' . $exception->getMessage(), [], 500);
             }
-
-            $order->status = $status;
-            $order->save();
-            DB::commit();
-
-            return $this->sendResponse('Order status updated successfully', new OrderResource($order));
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return $this->sendError('Failed to update order status: ' . $exception->getMessage(), [], 500);
         }
+
+        return $this->sendError('Invalid status transition', [], 400);
     }
 }

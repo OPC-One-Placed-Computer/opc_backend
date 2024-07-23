@@ -8,6 +8,9 @@ use App\Http\Resources\OrderResourceCollection;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Exception;
+use Stripe\Refund;
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends BaseController
@@ -20,8 +23,12 @@ class OrderController extends BaseController
                 ->with('orderItems.product');
 
             $query->when($request->filled('status'), function ($q) use ($request) {
-                if ($request->input('status') === 'active') {
-                    return $q->whereNotIn('status', ['pending', 'completed', 'cancelled']);
+                $status = $request->input('status');
+
+                if ($status === 'active') {
+                    return $q->whereIn('status', ['pending', 'paid']);
+                } elseif ($status === 'inactive') {
+                    return $q->whereIn('status', ['completed', 'cancelled', 'refunded']);
                 } else {
                     return $q->where('status', $request->input('status'));
                 }
@@ -70,28 +77,49 @@ class OrderController extends BaseController
     public function cancelOrder(Request $request)
     {
         $request->validate([
-            'order_id' => 'required|exists:orders,id,user_id,' . auth()->user()->id,
+            'order_id' => 'required|exists:orders,id',
         ]);
 
         $orderId = $request->input('order_id');
-
-        $order = Order::where('id', $orderId)->where('user_id', auth()->user()->id)->first();
+        $order = Order::where('id', $orderId)->first();
 
         if (!$order) {
-            return $this->sendError('Order not found or does not belong to the user', [], 404);
+            return $this->sendError('Order not found', [], 404);
         }
 
         if ($order->status === 'cancelled') {
             return $this->sendError('Order is already cancelled', [], 400);
         }
 
-        $order->status = 'cancelled';
-
         DB::beginTransaction();
         try {
+            if ($order->payment_method === 'stripe') {
+                $sessionId = $order->stripe_session_id;
+
+                if (!$sessionId) {
+                    return $this->sendError('Session ID is required', [], 400);
+                }
+
+                $apiKey = config('cashier.secret');
+                Stripe::setApiKey($apiKey);
+
+                $session = Session::retrieve($sessionId);
+
+                if ($session->payment_status === 'paid') {
+                    $refund = Refund::create([
+                        'payment_intent' => $session->payment_intent,
+                    ]);
+
+                    $order->status = 'refunded';
+                } else {
+                    $order->status = 'cancelled';
+                }
+            } elseif ($order->payment_method === 'cod') {
+                $order->status = 'cancelled';
+            }
             $order->save();
             DB::commit();
-            return $this->sendResponse('Cancel order successfully', new OrderResource($order));
+            return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
