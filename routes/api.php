@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductsController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -44,6 +45,14 @@ Route::prefix('v1')->group(function () {
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
             Route::get('/orders/all', [OrdersController::class, 'allOrders']);
+
+            Route::get('/sales/report', [AnalyticsController::class, 'salesReport']);
+            Route::get('/analytics/best-selling-products', [AnalyticsController::class, 'bestSellingProducts']);
+            Route::get('/analytics/order-statistics', [AnalyticsController::class, 'orderStatistics']);
+            Route::get('/analytics/revenue-statistics', [AnalyticsController::class, 'revenueStatistics']);
+            Route::get('/analytics/customer-analytics', [AnalyticsController::class, 'customerAnalytics']);
+            Route::get('/analytics/product-performance', [AnalyticsController::class, 'productPerformance']);
+            Route::get('/analytics/payment-methods-breakdown', [AnalyticsController::class, 'paymentMethodsBreakdown']);
         });
 
         Route::middleware('role:user')->group(function () {
