@@ -58,7 +58,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:user')->group(function () {
             Route::get('/cart', [CartItemController::class, 'index']);
             Route::post('/cart', [CartItemController::class, 'store']);
-            Route::put('/cart/{id}', [CartItemController::class, 'update']);
+            Route::post('/cart/{id}', [CartItemController::class, 'update']);
             Route::delete('/cart/{id}', [CartItemController::class, 'destroy']);
 
             Route::post('/orders', [PaymentController::class, 'placeOrder']);
