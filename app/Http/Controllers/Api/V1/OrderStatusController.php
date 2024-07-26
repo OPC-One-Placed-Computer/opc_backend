@@ -37,6 +37,7 @@ class OrderStatusController extends BaseController
         if (($order->status === 'pending' || $order->status === 'paid') && $status === 'confirmed') {
             DB::beginTransaction();
             try {
+
                 $quantityChanges = [];
 
                 foreach ($order->orderItems as $orderItem) {
@@ -69,8 +70,19 @@ class OrderStatusController extends BaseController
                 DB::rollBack();
                 return $this->sendError('Failed to update order status to confirmed: ' . $exception->getMessage(), [], 500);
             }
-        }
+        } else {
+            $validStatuses = ['processing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded'];
 
-        return $this->sendError('Invalid status transition', [], 400);
+            if (in_array($status, $validStatuses)) {
+                $order->status = $status;
+                $order->save();
+
+                return $this->sendResponse('Order status updated successfully', [
+                    'order' => new OrderResource($order),
+                ]);
+            }
+
+            return $this->sendError('Invalid status transition', [], 400);
+        }
     }
 }
