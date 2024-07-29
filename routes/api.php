@@ -22,7 +22,6 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/products', [ProductsController::class, 'index']);
     Route::get('/products/{id}', [ProductsController::class, 'show']);
-    Route::get('/products/featured', [ProductsController::class, 'featured']);
 
     Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
 

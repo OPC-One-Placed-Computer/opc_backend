@@ -6,7 +6,6 @@
             <div id="success-animation" style="width: 300px; height: 300px; margin: 0 auto;"></div>
             <h1 class="text-success display-4">Payment Successful</h1>
             <p class="lead">Your payment was successful. Thank you for your order!</p>
-            <p class="lead">Please close this tab.</p>
         </div>
     </div>
 
