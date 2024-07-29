@@ -23,6 +23,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/products', [ProductsController::class, 'index']);
     Route::get('/products/{id}', [ProductsController::class, 'show']);
 
+    Route::get('/download/product-image', [DownloadFileController::class, 'productImage']);
+
+
     Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
 
     Route::get('stripe/status', [PaymentController::class, 'stripeOrderStatus']);
@@ -33,7 +36,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::get('/current/authentication', [AuthController::class, 'current_authentication']);
-        Route::get('/download/file', [DownloadFileController::class, 'downloadImage']);
+        Route::get('/download/user-image', [DownloadFileController::class, 'userImage']);
 
         Route::middleware('role:admin')->group(function () {
             Route::get('users', [UserController::class, 'index']);
