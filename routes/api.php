@@ -46,7 +46,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/orders/all', [OrdersController::class, 'allOrders']);
 
-            Route::get('/sales/report', [AnalyticsController::class, 'salesReport']);
+            Route::get('/analytics/sales-report', [AnalyticsController::class, 'salesReport']);
             Route::get('/analytics/best-selling-products', [AnalyticsController::class, 'bestSellingProducts']);
             Route::get('/analytics/order-statistics', [AnalyticsController::class, 'orderStatistics']);
             Route::get('/analytics/revenue-statistics', [AnalyticsController::class, 'revenueStatistics']);
