@@ -130,6 +130,23 @@ class PaymentController extends BaseController
         }
     }
 
+    public function deleteOrder(int $id)
+    {
+        DB::beginTransaction();
+        try {
+            $order = Order::where('id', $id)->where('status', 'completed')->firstOrFail();
+
+            $order->delete();
+
+            DB::commit();
+
+            return $this->sendResponse('Order deleted successfully', new OrderResource($order));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->sendError($exception->getMessage());
+        }
+    }
+
     public function handleWebhook(Request $request)
     {
         $payload = $request->getContent();
