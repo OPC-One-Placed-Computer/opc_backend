@@ -6,7 +6,6 @@
             <div id="cancel-animation" style="width: 300px; height: 300px; margin: 0 auto;"></div>
             <h1 class="text-warning display-4">Payment Cancelled</h1>
             <p class="lead">Your payment was cancelled.</p>
-            <p class="lead">Please close this tab.</p>
         </div>
     </div>
 
