@@ -11,11 +11,11 @@ class DownloadFileController extends BaseController
     public function productImage(Request $request)
     {
         $request->validate([
-            'file_name' => 'required|string'
+            'image_name' => 'required|string'
         ]);
 
-        $fileName = $request->input('file_name');
-        $filePath = Storage::disk('local')->path('product_images/' . $fileName);
+        $imageName = $request->input('image_name');
+        $filePath = Storage::disk('local')->path('product_images/' . $imageName);
 
         if (!file_exists($filePath)) {
             return $this->sendError('File not found!');
@@ -27,11 +27,11 @@ class DownloadFileController extends BaseController
     public function userImage(Request $request)
     {
         $request->validate([
-            'file_name' => 'required|string'
+            'image_name' => 'required|string'
         ]);
 
-        $fileName = $request->input('file_name');
-        $filePath = Storage::disk('local')->path('user_images/' . $fileName);
+        $imageName = $request->input('image_name');
+        $filePath = Storage::disk('local')->path('user_images/' . $imageName);
 
         if (!file_exists($filePath)) {
             return $this->sendError('File not found!');
