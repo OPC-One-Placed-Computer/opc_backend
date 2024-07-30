@@ -47,7 +47,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
             Route::get('/orders/all', [OrdersController::class, 'allOrders']);
-            Route::delete('/orders/delete/{id}', [PaymentController::class, 'deleteOrder']);
+            Route::delete('/orders/delete', [PaymentController::class, 'deleteOrder']);
 
             Route::get('/analytics/sales-report', [AnalyticsController::class, 'salesReport']);
             Route::get('/analytics/best-selling-products', [AnalyticsController::class, 'bestSellingProducts']);
