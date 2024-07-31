@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
 
     Route::get('stripe/status', [PaymentController::class, 'stripeOrderStatus']);
+    Route::get('stripe/checkout-url', [PaymentController::class, 'getCheckoutUrl']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function (Request $request) {

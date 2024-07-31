@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use Stripe\Webhook;
@@ -242,6 +243,38 @@ class PaymentController extends BaseController
             return $this->sendResponse('Order fetched successfully', new OrderResource($order));
         } catch (Exception $exception) {
             return $this->sendError($exception->getMessage());
+        }
+    }
+
+    public function getCheckoutUrl(Request $request)
+    {
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            return $this->sendError('Session ID is required', [], 400);
+        }
+
+        $apiKey = config('cashier.secret');
+
+        try {
+            $response = Http::withBasicAuth($apiKey, '')
+                ->get("https://api.stripe.com/v1/checkout/sessions/{$sessionId}");
+
+            if ($response->failed()) {
+                return $this->sendError('Failed to retrieve session details from Stripe', [], $response->status());
+            }
+
+            $sessionData = $response->json();
+
+            if (!isset($sessionData['url'])) {
+                return $this->sendError('Checkout URL not found', [], 404);
+            }
+
+            return $this->sendResponse('Checkout URL retrieved successfully', [
+                'checkout_url' => $sessionData['url']
+            ]);
+        } catch (Exception $exception) {
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }
