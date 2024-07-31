@@ -7,6 +7,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -41,18 +42,32 @@ class PaymentController extends BaseController
         try {
             $orderStatus = $validatedData['payment_method'] === 'stripe' ? 'awaiting payment' : 'pending';
 
-            $order = Order::create([
-                'user_id' => $user->id,
-                'full_name' => $validatedData['full_name'],
-                'shipping_address' => $validatedData['shipping_address'],
-                'total' => $total,
-                'status' => $orderStatus,
-                'payment_method' => $validatedData['payment_method'],
-            ]);
+            $order = Order::where('user_id', $user->id)->where('status', 'awaiting payment')->whereDate('created_at', Carbon::today())->first();
+            if ($order) {
+                $order->update([
+                    'user_id' => $user->id,
+                    'full_name' => $validatedData['full_name'],
+                    'shipping_address' => $validatedData['shipping_address'],
+                    'total' => $total,
+                    'status' => $orderStatus,
+                    'payment_method' => $validatedData['payment_method'],
+                    'stripe_session_id' => $validatedData['stripe_session_id'] ?? null,
+                ]);
+                OrderItem::where('order_id', $order->id)->delete();
+            } else {
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'full_name' => $validatedData['full_name'],
+                    'shipping_address' => $validatedData['shipping_address'],
+                    'total' => $total,
+                    'status' => $orderStatus,
+                    'payment_method' => $validatedData['payment_method'],
+                    'stripe_session_id' => $validatedData['stripe_session_id'] ?? null,
+                ]);
+            }
 
             foreach ($cartItems as $cartItem) {
                 $product = $cartItem->product;
-
                 if ($product) {
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -61,8 +76,6 @@ class PaymentController extends BaseController
                         'subtotal' => $product->price * $cartItem->quantity,
                     ]);
                 }
-
-                $cartItem->delete();
             }
 
             if ($validatedData['payment_method'] === 'stripe') {
@@ -93,7 +106,7 @@ class PaymentController extends BaseController
                 }
 
                 if (isset($validatedData['cancel_url'])) {
-                    $cancel_url = $validatedData['cancel_url'] . "/" . $order->id;
+                    $cancel_url = $validatedData['cancel_url'];
                 } else {
                     $cancel_url = route('checkout.cancel');
                 }
@@ -118,41 +131,17 @@ class PaymentController extends BaseController
                     'session_id' => $checkoutSession->id,
                     'url' => $checkoutSession->url,
                 ]);
+            } else {
+
+                foreach ($cartItems as $cartItem) {
+                    $cartItem->delete();
+                }
+
+                DB::commit();
+                $order->load('orderItems.product');
+
+                return $this->sendResponse('Order placed successfully', new OrderResource($order));
             }
-
-            DB::commit();
-            $order->load('orderItems.product');
-
-            return $this->sendResponse('Order placed successfully', new OrderResource($order));
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return $this->sendError($exception->getMessage());
-        }
-    }
-
-    public function deleteOrder(Request $request)
-    {
-        $validatedData = $request->validate([
-            'order_ids' => 'required|array',
-        ]);
-
-        $orderIds = collect($validatedData['order_ids'])->toArray();
-
-        $orders = Order::whereIn('id', $orderIds)->get();
-
-        if ($orders->isEmpty()) {
-            return $this->sendError('No orders found with the given IDs');
-        }
-
-        DB::beginTransaction();
-        try {
-            $orders->each(function ($order) {
-                $order->delete();
-            });
-
-            DB::commit();
-
-            return $this->sendResponse('Orders deleted successfully');
         } catch (Exception $exception) {
             DB::rollBack();
             return $this->sendError($exception->getMessage());
@@ -176,18 +165,51 @@ class PaymentController extends BaseController
         if ($event->type === 'checkout.session.completed') {
             $session = $event->data->object;
 
-            $order = Order::where('stripe_session_id', $session->id)->first();
-            if ($order) {
-                $order->status = 'paid';
-                $order->save();
+            DB::beginTransaction();
+            try {
+                $order = Order::where('stripe_session_id', $session->id)->first();
+                if ($order) {
+                    $order->status = 'paid';
+                    $order->save();
+
+                    $cartItems = CartItem::where('user_id', $order->user_id)->get();
+
+                    foreach ($cartItems as $cartItem) {
+                        $product = $cartItem->product;
+
+                        if ($product) {
+                            OrderItem::create([
+                                'order_id' => $order->id,
+                                'product_id' => $cartItem->product_id,
+                                'quantity' => $cartItem->quantity,
+                                'subtotal' => $product->price * $cartItem->quantity,
+                            ]);
+                        }
+
+                        $cartItem->delete();
+                    }
+                }
+
+                DB::commit();
+            } catch (Exception $exception) {
+                DB::rollBack();
+                return response()->json(['error' => $exception->getMessage()], 500);
             }
         } elseif ($event->type === 'checkout.session.expired') {
             $session = $event->data->object;
 
-            $order = Order::where('stripe_session_id', $session->id)->first();
-            if ($order) {
-                $order->status = 'no payment received';
-                $order->save();
+            DB::beginTransaction();
+            try {
+                $order = Order::where('stripe_session_id', $session->id)->first();
+                if ($order) {
+                    $order->status = 'failed';
+                    $order->save();
+                }
+
+                DB::commit();
+            } catch (Exception $exception) {
+                DB::rollBack();
+                return response()->json(['error' => $exception->getMessage()], 500);
             }
         }
 
