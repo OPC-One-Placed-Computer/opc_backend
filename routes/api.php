@@ -48,21 +48,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
             Route::get('/orders/all', [OrdersController::class, 'allOrders']);
-            Route::delete('/orders/delete', [PaymentController::class, 'deleteOrder']);
+            Route::delete('/orders/delete', [OrdersController::class, 'deleteOrder']);
 
             Route::get('/analytics/sales-report', [AnalyticsController::class, 'salesReport']);
-            Route::get('/analytics/best-selling-products', [AnalyticsController::class, 'bestSellingProducts']);
-            Route::get('/analytics/order-statistics', [AnalyticsController::class, 'orderStatistics']);
             Route::get('/analytics/revenue-statistics', [AnalyticsController::class, 'revenueStatistics']);
-            Route::get('/analytics/customer-analytics', [AnalyticsController::class, 'customerAnalytics']);
             Route::get('/analytics/product-performance', [AnalyticsController::class, 'productPerformance']);
-            Route::get('/analytics/payment-methods-breakdown', [AnalyticsController::class, 'paymentMethodsBreakdown']);
         });
 
         Route::middleware('role:user')->group(function () {
             Route::get('/cart', [CartItemController::class, 'index']);
             Route::post('/cart', [CartItemController::class, 'store']);
-            Route::put('/cart/{id}', [CartItemController::class, 'update']);
+            Route::post('/cart/{id}', [CartItemController::class, 'update']);
             Route::delete('/cart/{id}', [CartItemController::class, 'destroy']);
 
             Route::post('/orders', [PaymentController::class, 'placeOrder']);

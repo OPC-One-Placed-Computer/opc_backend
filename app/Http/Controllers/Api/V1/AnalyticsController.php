@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseController;
-use Carbon\Carbon;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -110,39 +108,8 @@ class AnalyticsController extends BaseController
 
             return $this->sendResponse($label, $sales);
         } catch (Exception $exception) {
-            return $this->sendError('Failed to generate sales report', ['error' => $exception->getMessage()], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
-    }
-
-    public function bestSellingProducts()
-    {
-        $products = Order::join('order_items', 'orders.id', '=', 'order_items.order_id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->select('products.product_name', DB::raw('SUM(order_items.quantity) as total_units_sold'), DB::raw('SUM(order_items.subtotal) as total_revenue'))
-            ->groupBy('products.product_name')
-            ->orderBy('total_units_sold', 'desc')
-            ->get();
-
-        return $this->sendResponse('Best Selling Products', $products);
-    }
-
-    public function orderStatistics()
-    {
-        $statuses = [
-            'total_orders' => Order::count(),
-            'pending_orders' => Order::where('status', 'pending')->count(),
-            'confirmed_orders' => Order::where('status', 'confirmed')->count(),
-            'awaiting_payment_orders' => Order::where('status', 'awaiting_payment')->count(),
-            'paid_orders' => Order::where('status', 'paid')->count(),
-            'processing_orders' => Order::where('status', 'processing')->count(),
-            'shipped_orders' => Order::where('status', 'shipped')->count(),
-            'delivered_orders' => Order::where('status', 'delivered')->count(),
-            'completed_orders' => Order::where('status', 'completed')->count(),
-            'cancelled_orders' => Order::where('status', 'cancelled')->count(),
-            'refunded_orders' => Order::where('status', 'refunded')->count(),
-        ];
-
-        return $this->sendResponse('Order Statistics', $statuses);
     }
 
     public function revenueStatistics()
@@ -163,29 +130,6 @@ class AnalyticsController extends BaseController
         return $this->sendResponse('Revenue Analytics', $data);
     }
 
-    public function customerAnalytics()
-    {
-        $newCustomers = User::whereDate('created_at', '>', Carbon::now()->subMonth())->count();
-        $returningCustomers = Order::select('user_id')
-            ->groupBy('user_id')
-            ->havingRaw('COUNT(*) > 1')
-            ->get()
-            ->count();
-        $customerLifetimeValue = Order::select('user_id', DB::raw('SUM(total) as total_spent'))
-            ->groupBy('user_id')
-            ->pluck('total_spent')
-            ->avg();
-
-        $data = [
-            'new_customers' => $newCustomers,
-            'returning_customers' => $returningCustomers,
-            'customer_lifetime_value' => $customerLifetimeValue,
-        ];
-
-        return $this->sendResponse('Customer Analytics', $data);
-    }
-
-
     public function productPerformance()
     {
         $inventoryLevels = Product::select('product_name', 'quantity')->get();
@@ -199,14 +143,5 @@ class AnalyticsController extends BaseController
         ];
 
         return $this->sendResponse('Product Performance', $data);
-    }
-
-    public function paymentMethodsBreakdown()
-    {
-        $paymentMethods = Order::select('payment_method', DB::raw('COUNT(*) as count'))
-            ->groupBy('payment_method')
-            ->get();
-
-        return $this->sendResponse('Payment Methods Breakdown', $paymentMethods);
     }
 }
