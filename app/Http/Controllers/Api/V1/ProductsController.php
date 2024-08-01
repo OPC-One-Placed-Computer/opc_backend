@@ -42,7 +42,7 @@ class ProductsController extends BaseController
             $maxPrice = $request->input('max_price', 999999);
             $query->whereBetween('price', [$minPrice, $maxPrice]);
 
-            $perPage = $request->input('per_page', 25);
+            $perPage = $request->input('per_page', 20);
             $products = $query->paginate($perPage);
 
             if ($products->isEmpty()) {

@@ -40,7 +40,7 @@ class OrderController extends BaseController
                 return $q->orderBy('created_at', 'desc');
             });
 
-            $perPage = $request->input('per_page', 25);
+            $perPage = $request->input('per_page', 20);
             $orders = $query->paginate($perPage);
 
             if ($orders->isEmpty()) {
