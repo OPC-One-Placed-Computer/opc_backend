@@ -61,9 +61,9 @@ class ProductController extends BaseController
 
             DB::commit();
             return $this->sendResponse('Product successfully added', new ProductResource($product));
-        } catch (Exception $exeption) {
+        } catch (Exception $exception) {
             DB::rollBack();
-            $this->sendError($exeption);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
@@ -116,9 +116,9 @@ class ProductController extends BaseController
 
             DB::commit();
             return $this->sendResponse('Product updated successfully', new ProductResource($product));
-        } catch (Exception $exeption) {
+        } catch (Exception $exception) {
             DB::rollBack();
-            $this->sendError($exeption);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
@@ -129,8 +129,8 @@ class ProductController extends BaseController
             $product->delete();
 
             return $this->sendResponse('Product deleted successfully');
-        } catch (Exception $exeption) {
-            $this->sendError($exeption);
+        } catch (Exception $exception) {
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }

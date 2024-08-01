@@ -19,7 +19,6 @@ class CartItemController extends BaseController
 
     public function index()
     {
-        // Fetch cart items for the current user
         $cartItems = CartItem::where('user_id', auth()->user()->id)->with('product')->get();
 
         if ($cartItems->isEmpty()) {
@@ -43,7 +42,6 @@ class CartItemController extends BaseController
             $productId = $validatedData['product_id'];
             $quantity = $validatedData['quantity'];
 
-            // Check if the product already exists in the cart for the current user
             $existingCartItem = CartItem::where('user_id', $userId)
                 ->where('product_id', $productId)
                 ->first();
@@ -57,7 +55,6 @@ class CartItemController extends BaseController
                 return $this->sendResponse('Product quantity updated successfully', new CartItemResource($existingCartItem));
             }
 
-            // Product does not exist in cart, create a new cart item
             $product = Product::find($productId);
             $subtotal = $product->price * $quantity;
 
@@ -70,15 +67,14 @@ class CartItemController extends BaseController
 
             DB::commit();
             return $this->sendResponse('Product added to cart successfully', new CartItemResource($cartItem));
-        } catch (Exception $exeption) {
+        } catch (Exception $exception) {
             DB::rollBack();
-            $this->sendError($exeption);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
     public function update(Request $request, int $id)
     {
-        // Validate request
         $validatedData = $request->validate([
             'quantity' => 'required|integer|min:0',
         ]);
@@ -89,7 +85,6 @@ class CartItemController extends BaseController
             $userId = auth()->user()->id;
             $quantity = $validatedData['quantity'];
 
-            // Find the cart item belonging to the current user
             $cartItem = CartItem::where('user_id', $userId)->findOrFail($id);
 
             if ($quantity == 0) {
@@ -98,22 +93,20 @@ class CartItemController extends BaseController
                 return $this->sendResponse('Cart item deleted successfully');
             }
 
-            // Update the cart item quantity and subtotal
             $cartItem->quantity = $quantity;
             $cartItem->subtotal = $cartItem->product->price * $quantity;
             $cartItem->save();
 
             DB::commit();
             return $this->sendResponse('Cart item updated successfully', new CartItemResource($cartItem));
-        } catch (Exception $exeption) {
+        } catch (Exception $exception) {
             DB::rollBack();
-            $this->sendError($exeption);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
     public function destroy(int $id)
     {
-        // Find cart item belonging to the current user
         $cartItem = CartItem::where('user_id', auth()->user()->id)->findOrFail($id);
 
         $cartItem->delete();

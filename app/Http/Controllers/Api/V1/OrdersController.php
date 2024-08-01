@@ -8,6 +8,7 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrdersController extends BaseController
 {
@@ -72,7 +73,36 @@ class OrdersController extends BaseController
 
             return $this->sendResponse('Orders fetched successfully', $orderCollection);
         } catch (Exception $exception) {
-            return $this->sendError('Failed to fetch orders', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
+        }
+    }
+
+    public function deleteOrder(Request $request)
+    {
+        $validatedData = $request->validate([
+            'order_ids' => 'required|array',
+        ]);
+
+        $orderIds = collect($validatedData['order_ids'])->toArray();
+
+        $orders = Order::whereIn('id', $orderIds)->get();
+
+        if ($orders->isEmpty()) {
+            return $this->sendError('No orders found with the given IDs');
+        }
+
+        DB::beginTransaction();
+        try {
+            $orders->each(function ($order) {
+                $order->delete();
+            });
+
+            DB::commit();
+
+            return $this->sendResponse('Orders deleted successfully');
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }
