@@ -149,36 +149,6 @@ class PaymentController extends BaseController
         }
     }
 
-    public function deleteOrder(Request $request)
-    {
-        $validatedData = $request->validate([
-            'order_ids' => 'required|array',
-        ]);
-
-        $orderIds = collect($validatedData['order_ids'])->toArray();
-
-        $orders = Order::whereIn('id', $orderIds)->get();
-
-        if ($orders->isEmpty()) {
-            return $this->sendError('No orders found with the given IDs');
-        }
-
-        DB::beginTransaction();
-        try {
-            $orders->each(function ($order) {
-                $order->delete();
-            });
-
-            DB::commit();
-
-            return $this->sendResponse('Orders deleted successfully');
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return $this->sendError($exception->getMessage());
-        }
-    }
-
-
     public function handleWebhook(Request $request)
     {
         $payload = $request->getContent();

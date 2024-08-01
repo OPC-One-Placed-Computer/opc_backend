@@ -55,7 +55,7 @@ class OrderController extends BaseController
 
             return $this->sendResponse('Orders fetched successfully', $orderCollection);
         } catch (Exception $exception) {
-            return $this->sendError('Failed to fetch orders', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
@@ -70,7 +70,7 @@ class OrderController extends BaseController
 
             return $this->sendResponse('Order fetched successfully', new OrderResource($order));
         } catch (Exception $exception) {
-            return $this->sendError('Failed to fetch order', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
@@ -122,7 +122,7 @@ class OrderController extends BaseController
             return $this->sendResponse('Order cancelled successfully', new OrderResource($order));
         } catch (Exception $exception) {
             DB::rollBack();
-            return $this->sendError('Failed to cancel order: ' . $exception->getMessage(), [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }

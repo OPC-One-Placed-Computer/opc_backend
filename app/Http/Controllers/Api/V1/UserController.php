@@ -26,7 +26,6 @@ class UserController extends BaseController
         try {
             $user = User::findOrFail($userId);
 
-            // Delete user's image if it exists
             if ($user->image_name && $user->image_path) {
                 Storage::delete('user_images/' . $user->image_name);
             }
@@ -34,8 +33,8 @@ class UserController extends BaseController
             $user->delete();
 
             return $this->sendResponse('User deleted successfully');
-        } catch (Exception $exeption) {
-            $this->sendError($exeption);
+        } catch (Exception $exception) {
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
@@ -63,7 +62,7 @@ class UserController extends BaseController
             return $this->sendResponse('User registered successfully', new AuthResource($user));
         } catch (Exception $exception) {
             DB::rollBack();
-            return $this->sendError('Failed to register user', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }

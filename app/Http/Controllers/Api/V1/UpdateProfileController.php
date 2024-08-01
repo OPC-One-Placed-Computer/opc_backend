@@ -81,7 +81,7 @@ class UpdateProfileController extends BaseController
             return response()->json($responseData);
         } catch (Exception $exception) {
             DB::rollBack();
-            return $this->sendError('Failed to update profile', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 }

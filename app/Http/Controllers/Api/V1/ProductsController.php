@@ -57,7 +57,7 @@ class ProductsController extends BaseController
 
             return $this->sendResponse('Products fetched successfully', $productCollection);
         } catch (Exception $exception) {
-            return $this->sendError('Failed to fetch products', [], 500);
+            return $this->sendError($exception->getMessage(), [], 500);
         }
     }
 
