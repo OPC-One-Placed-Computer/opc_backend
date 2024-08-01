@@ -174,19 +174,7 @@ class PaymentController extends BaseController
                     $order->save();
 
                     $cartItems = CartItem::where('user_id', $order->user_id)->get();
-
                     foreach ($cartItems as $cartItem) {
-                        $product = $cartItem->product;
-
-                        if ($product) {
-                            OrderItem::create([
-                                'order_id' => $order->id,
-                                'product_id' => $cartItem->product_id,
-                                'quantity' => $cartItem->quantity,
-                                'subtotal' => $product->price * $cartItem->quantity,
-                            ]);
-                        }
-
                         $cartItem->delete();
                     }
                 }
